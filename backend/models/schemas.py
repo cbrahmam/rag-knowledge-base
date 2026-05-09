@@ -45,3 +45,27 @@ class SearchResult(BaseModel):
     source_page: Optional[int] = None
     chunk_index: int
     similarity_score: float
+
+
+class SourceCitation(BaseModel):
+    document: str
+    page: Optional[int] = None
+    chunk_text: str
+    relevance_score: float
+
+
+class RAGResponse(BaseModel):
+    answer: str
+    sources: List[SourceCitation]
+    confidence: str
+    chunks_searched: int
+    processing_time_ms: int
+
+
+class QueryRequest(BaseModel):
+    question: str
+    context: Optional[List[dict]] = None
+
+
+class MultiQueryRequest(BaseModel):
+    questions: List[str]

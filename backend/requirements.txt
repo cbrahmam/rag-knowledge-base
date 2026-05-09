@@ -5,3 +5,4 @@ PyMuPDF
 python-docx
 sentence-transformers
 chromadb
+anthropic
