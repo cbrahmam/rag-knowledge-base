@@ -11,6 +11,8 @@ from fastapi import APIRouter, HTTPException, UploadFile, File
 from models.schemas import DocumentUploadResponse, DocumentListItem
 from services.doc_parser import parse_document, SUPPORTED_TYPES
 from services.chunker import chunk_text
+from services.embeddings import generate_embeddings
+from services.vector_store import add_document, delete_document as vs_delete, get_stats
 
 router = APIRouter(prefix="/api/documents", tags=["documents"])
 
@@ -58,6 +60,10 @@ async def upload_document(file: UploadFile = File(...)):
             source_pages=parsed.pages,
         )
 
+        chunk_texts = [c.text for c in chunks]
+        embeddings = generate_embeddings(chunk_texts)
+        add_document(chunks, embeddings)
+
         store = _load_store()
         store[file.filename] = {
             "file_type": parsed.file_type,
@@ -65,7 +71,6 @@ async def upload_document(file: UploadFile = File(...)):
             "total_characters": parsed.total_characters,
             "uploaded_at": datetime.now(timezone.utc).isoformat(),
             "size_bytes": len(content),
-            "chunks": [c.model_dump() for c in chunks],
         }
         _save_store(store)
 
@@ -110,6 +115,8 @@ async def delete_document(filename: str):
     if filename not in store:
         raise HTTPException(status_code=404, detail="Document not found")
 
+    vs_delete(filename)
+
     del store[filename]
     _save_store(store)
 
@@ -118,3 +125,8 @@ async def delete_document(filename: str):
         os.remove(file_path)
 
     return {"message": f"Deleted {filename}", "status": "deleted"}
+
+
+@router.get("/stats")
+async def document_stats():
+    return get_stats()

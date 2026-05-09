@@ -37,3 +37,11 @@ class DocumentListItem(BaseModel):
     total_chunks: int
     uploaded_at: str
     size_bytes: int
+
+
+class SearchResult(BaseModel):
+    text: str
+    source_document: str
+    source_page: Optional[int] = None
+    chunk_index: int
+    similarity_score: float
