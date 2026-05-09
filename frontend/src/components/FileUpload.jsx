@@ -1,0 +1,127 @@
+import { useState, useRef } from 'react';
+
+const ACCEPTED_TYPES = {
+  'application/pdf': '.pdf',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '.docx',
+  'text/plain': '.txt',
+  'text/markdown': '.md',
+};
+
+const ACCEPT_STRING = '.pdf,.docx,.txt,.md';
+
+export default function FileUpload({ onUpload }) {
+  const [isDragging, setIsDragging] = useState(false);
+  const [uploading, setUploading] = useState([]);
+  const inputRef = useRef(null);
+
+  function handleDragOver(e) {
+    e.preventDefault();
+    setIsDragging(true);
+  }
+
+  function handleDragLeave(e) {
+    e.preventDefault();
+    setIsDragging(false);
+  }
+
+  async function handleFiles(files) {
+    const validFiles = Array.from(files).filter(f => {
+      const ext = '.' + f.name.split('.').pop().toLowerCase();
+      return ['.pdf', '.docx', '.txt', '.md'].includes(ext);
+    });
+
+    if (validFiles.length === 0) return;
+
+    setUploading(validFiles.map(f => ({ name: f.name, status: 'uploading' })));
+
+    for (let i = 0; i < validFiles.length; i++) {
+      try {
+        await onUpload(validFiles[i]);
+        setUploading(prev =>
+          prev.map((item, idx) =>
+            idx === i ? { ...item, status: 'done' } : item
+          )
+        );
+      } catch {
+        setUploading(prev =>
+          prev.map((item, idx) =>
+            idx === i ? { ...item, status: 'error' } : item
+          )
+        );
+      }
+    }
+
+    setTimeout(() => setUploading([]), 2000);
+  }
+
+  function handleDrop(e) {
+    e.preventDefault();
+    setIsDragging(false);
+    handleFiles(e.dataTransfer.files);
+  }
+
+  function handleClick() {
+    inputRef.current?.click();
+  }
+
+  function handleChange(e) {
+    if (e.target.files.length) {
+      handleFiles(e.target.files);
+      e.target.value = '';
+    }
+  }
+
+  return (
+    <div className="p-3">
+      <div
+        onClick={handleClick}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        className={`border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors ${
+          isDragging
+            ? 'border-accent bg-accent/5'
+            : 'border-border hover:border-accent/50'
+        }`}
+      >
+        <svg className="w-6 h-6 mx-auto mb-2 text-text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+        </svg>
+        <p className="text-sm text-text-secondary">Drop files or click to upload</p>
+        <p className="text-xs text-text-secondary/60 mt-1">PDF, DOCX, TXT, MD</p>
+      </div>
+
+      <input
+        ref={inputRef}
+        type="file"
+        accept={ACCEPT_STRING}
+        multiple
+        onChange={handleChange}
+        className="hidden"
+      />
+
+      {uploading.length > 0 && (
+        <div className="mt-2 space-y-1">
+          {uploading.map((item, i) => (
+            <div key={i} className="flex items-center gap-2 text-xs px-1">
+              {item.status === 'uploading' && (
+                <div className="w-3 h-3 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+              )}
+              {item.status === 'done' && (
+                <svg className="w-3 h-3 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              )}
+              {item.status === 'error' && (
+                <svg className="w-3 h-3 text-danger" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              )}
+              <span className="truncate text-text-secondary">{item.name}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
