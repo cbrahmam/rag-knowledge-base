@@ -9,6 +9,7 @@ const SUGGESTED_QUESTIONS = [
 
 export default function ChatInterface({ messages, isLoading, onSend, onClear, hasDocuments }) {
   const [input, setInput] = useState('');
+  const [toast, setToast] = useState(null);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -27,20 +28,57 @@ export default function ChatInterface({ messages, isLoading, onSend, onClear, ha
     onSend(question);
   }
 
+  function showToast(msg) {
+    setToast(msg);
+    setTimeout(() => setToast(null), 2500);
+  }
+
+  function exportChat() {
+    const lines = messages.map(m => {
+      if (m.role === 'user') return `**You:** ${m.content}`;
+      let text = `**DocuMind:** ${m.content}`;
+      if (m.sources?.length) {
+        text += '\n\n_Sources:_\n' + m.sources.map(s =>
+          `- ${s.document}${s.page ? ` (p.${s.page})` : ''} — ${Math.round(s.relevance_score * 100)}% relevance`
+        ).join('\n');
+      }
+      return text;
+    });
+    const md = `# DocuMind Conversation\n\n${lines.join('\n\n---\n\n')}\n`;
+
+    const blob = new Blob([md], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `documind-chat-${new Date().toISOString().slice(0, 10)}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('Chat exported');
+  }
+
+  function copyChat() {
+    const lines = messages.map(m => {
+      if (m.role === 'user') return `You: ${m.content}`;
+      return `DocuMind: ${m.content}`;
+    });
+    navigator.clipboard.writeText(lines.join('\n\n')).then(() => showToast('Copied to clipboard'));
+  }
+
   const showSuggestions = hasDocuments && messages.length === 0;
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
+    <div className="flex-1 flex flex-col overflow-hidden relative">
       <div className="flex items-center justify-between px-6 py-2 border-b border-border">
         <h2 className="text-sm font-semibold text-text-primary">Chat</h2>
-        {messages.length > 0 && (
-          <button
-            onClick={onClear}
-            className="text-xs text-text-secondary hover:text-danger transition-colors"
-          >
-            Clear conversation
-          </button>
-        )}
+        <div className="flex items-center gap-3">
+          {messages.length > 0 && (
+            <>
+              <button onClick={copyChat} className="text-xs text-text-secondary hover:text-accent transition-colors">Copy</button>
+              <button onClick={exportChat} className="text-xs text-text-secondary hover:text-accent transition-colors">Export</button>
+              <button onClick={onClear} className="text-xs text-text-secondary hover:text-danger transition-colors">Clear</button>
+            </>
+          )}
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
@@ -95,6 +133,12 @@ export default function ChatInterface({ messages, isLoading, onSend, onClear, ha
 
         <div ref={messagesEndRef} />
       </div>
+
+      {toast && (
+        <div className="absolute top-16 right-6 bg-text-primary text-white text-xs px-3 py-2 rounded-lg shadow-lg animate-fade-in z-50">
+          {toast}
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="border-t border-border p-4">
         <div className="flex items-center gap-3 bg-surface border border-border rounded-xl px-4 py-2 focus-within:border-accent transition-colors shadow-sm">

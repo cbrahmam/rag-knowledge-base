@@ -34,3 +34,7 @@ export async function askQuestion(question, context = null) {
     body: JSON.stringify({ question, context }),
   });
 }
+
+export async function loadSampleDocs() {
+  return request('/documents/load-samples', { method: 'POST' });
+}

@@ -130,3 +130,46 @@ async def delete_document(filename: str):
 @router.get("/stats")
 async def document_stats():
     return get_stats()
+
+
+@router.post("/load-samples")
+async def load_sample_documents():
+    sample_dir = Path(__file__).parent.parent.parent / "sample-docs"
+    if not sample_dir.exists():
+        raise HTTPException(status_code=404, detail="Sample documents not found")
+
+    results = []
+    for file_path in sorted(sample_dir.glob("*")):
+        if file_path.suffix.lower() not in SUPPORTED_TYPES:
+            continue
+
+        content = file_path.read_bytes()
+        dest = UPLOAD_DIR / file_path.name
+        dest.write_bytes(content)
+
+        try:
+            parsed = parse_document(str(dest), file_path.name)
+            chunks = chunk_text(
+                parsed.text_content,
+                source_document=file_path.name,
+                source_pages=parsed.pages,
+            )
+            chunk_texts = [c.text for c in chunks]
+            embeddings = generate_embeddings(chunk_texts)
+            add_document(chunks, embeddings)
+
+            store = _load_store()
+            store[file_path.name] = {
+                "file_type": parsed.file_type,
+                "total_chunks": len(chunks),
+                "total_characters": parsed.total_characters,
+                "uploaded_at": datetime.now(timezone.utc).isoformat(),
+                "size_bytes": len(content),
+            }
+            _save_store(store)
+
+            results.append({"filename": file_path.name, "status": "processed", "chunks": len(chunks)})
+        except Exception as e:
+            results.append({"filename": file_path.name, "status": "error", "error": str(e)})
+
+    return {"loaded": len(results), "results": results}

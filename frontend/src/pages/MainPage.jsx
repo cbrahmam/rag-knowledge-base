@@ -3,7 +3,7 @@ import Layout from '../components/Layout';
 import Sidebar from '../components/Sidebar';
 import ChatInterface from '../components/ChatInterface';
 import useChat from '../hooks/useChat';
-import { uploadDocument, listDocuments, deleteDocument, getStats } from '../api/client';
+import { uploadDocument, listDocuments, deleteDocument, getStats, loadSampleDocs } from '../api/client';
 
 export default function MainPage() {
   const [documents, setDocuments] = useState([]);
@@ -28,6 +28,11 @@ export default function MainPage() {
     await refresh();
   }
 
+  async function handleLoadSamples() {
+    await loadSampleDocs();
+    await refresh();
+  }
+
   return (
     <Layout
       stats={stats}
@@ -37,6 +42,7 @@ export default function MainPage() {
           stats={stats}
           onUpload={handleUpload}
           onDelete={handleDelete}
+          onLoadSamples={handleLoadSamples}
         />
       }
     >
