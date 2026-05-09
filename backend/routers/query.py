@@ -20,7 +20,12 @@ async def ask_question(request: QueryRequest):
             detail="No documents uploaded yet. Please upload documents before asking questions.",
         )
 
-    return query(request.question, request.context)
+    try:
+        return query(request.question, request.context)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/multi", response_model=List[RAGResponse])
@@ -35,8 +40,13 @@ async def ask_multiple_questions(request: MultiQueryRequest):
             detail="No documents uploaded yet. Please upload documents before asking questions.",
         )
 
-    responses = []
-    for question in request.questions:
-        response = query(question)
-        responses.append(response)
-    return responses
+    try:
+        responses = []
+        for question in request.questions:
+            response = query(question)
+            responses.append(response)
+        return responses
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
