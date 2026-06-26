@@ -16,6 +16,7 @@ DocuMind creates a searchable AI knowledge base from your documents. Upload file
 - **Automatic text chunking** — Smart splitting at sentence boundaries with configurable overlap
 - **Vector embeddings** — Local embeddings with sentence-transformers (no API costs)
 - **Natural language Q&A** — Ask questions and get accurate answers powered by Claude
+- **Hybrid search** — Blend semantic (vector) and keyword (BM25) retrieval, switchable per query
 - **Source citations** — Every answer includes the exact documents and pages it came from
 - **Confidence scoring** — Know how reliable each answer is (high/medium/low)
 - **Conversation context** — Follow-up questions understand the conversation history
@@ -116,4 +117,17 @@ Click "Load Samples" in the sidebar to load the included sample documents, then 
 - **Local only**: ChromaDB and embeddings run locally — would need a hosted vector DB for production scale
 - **No authentication**: No user auth — intended for local/internal use
 
-Future improvements could include: streaming responses, hybrid search (keyword + semantic), document versioning, multi-collection support, and role-based access control.
+Future improvements could include: streaming responses, document versioning, multi-collection support, and role-based access control.
+
+### Search modes
+
+`POST /api/query` accepts a `search_mode` (`hybrid` | `semantic` | `keyword`) and an `alpha`
+(0.0–1.0) that weights the hybrid blend (1.0 = pure semantic, 0.0 = pure keyword):
+
+```json
+{ "question": "...", "search_mode": "hybrid", "alpha": 0.5 }
+```
+
+- **semantic** — cosine similarity over sentence-transformer embeddings (meaning-based)
+- **keyword** — BM25 lexical ranking (exact terms, names, codes, acronyms)
+- **hybrid** — normalized blend of both, weighted by `alpha`
