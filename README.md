@@ -20,6 +20,7 @@ DocuMind creates a searchable AI knowledge base from your documents. Upload file
 - **Confidence scoring** — Know how reliable each answer is (high/medium/low)
 - **Conversation context** — Follow-up questions understand the conversation history
 - **Chat export** — Download conversations as Markdown or copy to clipboard
+- **Collections** — Organize documents into named collections and scope questions to one
 - **Sample documents** — Included sample docs for instant testing
 
 ## Tech Stack
@@ -110,10 +111,15 @@ Click "Load Samples" in the sidebar to load the included sample documents, then 
 ## Limitations & Future Work
 
 - **No OCR**: Scanned PDFs (image-only) won't extract text — only text-based PDFs are supported
-- **Single collection**: All documents go into one knowledge base (no multi-tenant support)
 - **Chunk size**: Fixed at 500 characters — could benefit from adaptive chunking based on content type
 - **No streaming**: Answers appear all at once rather than streaming token-by-token
 - **Local only**: ChromaDB and embeddings run locally — would need a hosted vector DB for production scale
 - **No authentication**: No user auth — intended for local/internal use
 
-Future improvements could include: streaming responses, hybrid search (keyword + semantic), document versioning, multi-collection support, and role-based access control.
+Future improvements could include: streaming responses, hybrid search (keyword + semantic), document versioning, and role-based access control.
+
+### Collections
+
+Documents can be grouped into named collections. Upload accepts a `collection` form field
+(default `General`); `POST /api/query` accepts an optional `collection` to scope retrieval;
+`GET /api/documents/collections` lists collections with document and chunk counts.
