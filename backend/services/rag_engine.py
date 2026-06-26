@@ -4,7 +4,7 @@ import json
 import logging
 import os
 import time
-from typing import List, Optional
+from typing import Iterator, List, Optional
 
 import anthropic
 
@@ -55,6 +55,47 @@ Instructions:
 - If the context doesn't contain the answer, say "I couldn't find information about this in the uploaded documents"
 - Be concise but thorough
 - Return your response as JSON with fields: answer, sources (list of filenames used), confidence (high/medium/low)"""
+
+
+def _build_streaming_prompt(
+    question: str,
+    results: List[SearchResult],
+    conversation_context: Optional[List[dict]] = None,
+) -> str:
+    """Prompt variant for streaming: asks for a direct prose answer.
+
+    Unlike the non-streaming path, we don't ask Claude to wrap the answer in
+    JSON — that would force us to buffer the whole response before parsing.
+    Sources and confidence are computed on the backend from the retrieved
+    chunks, so the model only needs to produce the answer text.
+    """
+    context_parts = []
+    for r in results:
+        page_info = f", Page: {r.source_page}" if r.source_page else ""
+        context_parts.append(f"[Source: {r.source_document}{page_info}]\n{r.text}")
+
+    context_block = "\n---\n".join(context_parts)
+
+    conversation_section = ""
+    if conversation_context:
+        pairs = []
+        for item in conversation_context[-5:]:
+            pairs.append(f"Q: {item.get('question', '')}\nA: {item.get('answer', '')}")
+        conversation_section = f"\nPrevious conversation:\n{'---'.join(pairs)}\n"
+
+    return f"""Context documents:
+---
+{context_block}
+---
+{conversation_section}
+Question: {question}
+
+Instructions:
+- Answer based ONLY on the context above
+- Cite sources inline using [Source: filename] format
+- If the context doesn't contain the answer, say "I couldn't find information about this in the uploaded documents"
+- Be concise but thorough
+- Write a direct, well-formatted answer (Markdown allowed). Do NOT wrap it in JSON."""
 
 
 def _get_client() -> anthropic.Anthropic:
@@ -134,3 +175,64 @@ def query(
         chunks_searched=len(results),
         processing_time_ms=elapsed,
     )
+
+
+def query_stream(
+    question: str,
+    conversation_context: Optional[List[dict]] = None,
+) -> Iterator[dict]:
+    """Stream a RAG answer token-by-token.
+
+    Yields a sequence of event dicts:
+      {"type": "token", "text": ...}   — one per streamed text delta
+      {"type": "done", ...}            — final event with sources + metadata
+
+    The retrieval step is identical to ``query``; only generation streams.
+    """
+    start_time = time.time()
+
+    query_embedding = generate_embeddings([question])[0]
+    results = search(query_embedding, n_results=5)
+    relevant_results = [r for r in results if r.similarity_score >= SIMILARITY_THRESHOLD]
+
+    if not relevant_results:
+        fallback = "I couldn't find information about this in the uploaded documents."
+        yield {"type": "token", "text": fallback}
+        yield {
+            "type": "done",
+            "sources": [],
+            "confidence": "low",
+            "chunks_searched": len(results),
+            "processing_time_ms": int((time.time() - start_time) * 1000),
+        }
+        return
+
+    prompt = _build_streaming_prompt(question, relevant_results, conversation_context)
+    client = _get_client()
+
+    with client.messages.stream(
+        model="claude-sonnet-4-6-20250514",
+        max_tokens=1024,
+        system=SYSTEM_PROMPT,
+        messages=[{"role": "user", "content": prompt}],
+    ) as stream:
+        for text in stream.text_stream:
+            yield {"type": "token", "text": text}
+
+    sources = [
+        SourceCitation(
+            document=r.source_document,
+            page=r.source_page,
+            chunk_text=r.text[:200],
+            relevance_score=r.similarity_score,
+        ).model_dump()
+        for r in relevant_results
+    ]
+
+    yield {
+        "type": "done",
+        "sources": sources,
+        "confidence": _determine_confidence(relevant_results),
+        "chunks_searched": len(results),
+        "processing_time_ms": int((time.time() - start_time) * 1000),
+    }
