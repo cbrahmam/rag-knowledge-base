@@ -6,13 +6,23 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import List
 
-from fastapi import APIRouter, HTTPException, UploadFile, File
+from fastapi import APIRouter, HTTPException, UploadFile, File, Form
 
-from models.schemas import DocumentUploadResponse, DocumentListItem
+from models.schemas import (
+    DocumentUploadResponse,
+    DocumentListItem,
+    CollectionInfo,
+    DEFAULT_COLLECTION,
+)
 from services.doc_parser import parse_document, SUPPORTED_TYPES
 from services.chunker import chunk_text
 from services.embeddings import generate_embeddings
-from services.vector_store import add_document, delete_document as vs_delete, get_stats
+from services.vector_store import (
+    add_document,
+    delete_document as vs_delete,
+    get_stats,
+    list_collections,
+)
 
 router = APIRouter(prefix="/api/documents", tags=["documents"])
 
@@ -36,7 +46,11 @@ def _save_store(store: dict) -> None:
 
 
 @router.post("/upload", response_model=DocumentUploadResponse)
-async def upload_document(file: UploadFile = File(...)):
+async def upload_document(
+    file: UploadFile = File(...),
+    collection: str = Form(DEFAULT_COLLECTION),
+):
+    collection = collection.strip() or DEFAULT_COLLECTION
     ext = Path(file.filename).suffix.lower()
     if ext not in SUPPORTED_TYPES:
         raise HTTPException(
@@ -62,7 +76,7 @@ async def upload_document(file: UploadFile = File(...)):
 
         chunk_texts = [c.text for c in chunks]
         embeddings = generate_embeddings(chunk_texts)
-        add_document(chunks, embeddings)
+        add_document(chunks, embeddings, collection_name=collection)
 
         store = _load_store()
         store[file.filename] = {
@@ -71,6 +85,7 @@ async def upload_document(file: UploadFile = File(...)):
             "total_characters": parsed.total_characters,
             "uploaded_at": datetime.now(timezone.utc).isoformat(),
             "size_bytes": len(content),
+            "collection": collection,
         }
         _save_store(store)
 
@@ -81,6 +96,7 @@ async def upload_document(file: UploadFile = File(...)):
             total_characters=parsed.total_characters,
             status="processed",
             message=f"Successfully processed {file.filename} into {len(chunks)} chunks",
+            collection=collection,
         )
 
     except ValueError as e:
@@ -104,8 +120,14 @@ async def list_documents():
             total_chunks=meta["total_chunks"],
             uploaded_at=meta["uploaded_at"],
             size_bytes=meta["size_bytes"],
+            collection=meta.get("collection", DEFAULT_COLLECTION),
         ))
     return documents
+
+
+@router.get("/collections", response_model=List[CollectionInfo])
+async def get_collections():
+    return list_collections()
 
 
 @router.delete("/{filename}")
@@ -156,7 +178,7 @@ async def load_sample_documents():
             )
             chunk_texts = [c.text for c in chunks]
             embeddings = generate_embeddings(chunk_texts)
-            add_document(chunks, embeddings)
+            add_document(chunks, embeddings, collection_name="Samples")
 
             store = _load_store()
             store[file_path.name] = {
@@ -165,6 +187,7 @@ async def load_sample_documents():
                 "total_characters": parsed.total_characters,
                 "uploaded_at": datetime.now(timezone.utc).isoformat(),
                 "size_bytes": len(content),
+                "collection": "Samples",
             }
             _save_store(store)
 
