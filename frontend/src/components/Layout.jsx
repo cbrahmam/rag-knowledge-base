@@ -1,9 +1,9 @@
 import Header from './Header';
 
-export default function Layout({ stats, sidebar, children }) {
+export default function Layout({ stats, sidebar, children, onOpenAnalytics }) {
   return (
     <div className="h-screen flex flex-col">
-      <Header stats={stats} />
+      <Header stats={stats} onOpenAnalytics={onOpenAnalytics} />
       <div className="flex-1 flex overflow-hidden">
         {sidebar}
         <main className="flex-1 flex flex-col overflow-hidden bg-bg">
