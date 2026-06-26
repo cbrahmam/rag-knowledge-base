@@ -78,11 +78,12 @@ def _determine_confidence(results: List[SearchResult]) -> str:
 def query(
     question: str,
     conversation_context: Optional[List[dict]] = None,
+    collection: Optional[str] = None,
 ) -> RAGResponse:
     start_time = time.time()
 
     query_embedding = generate_embeddings([question])[0]
-    results = search(query_embedding, n_results=5)
+    results = search(query_embedding, n_results=5, collection_name=collection)
 
     relevant_results = [r for r in results if r.similarity_score >= SIMILARITY_THRESHOLD]
 
