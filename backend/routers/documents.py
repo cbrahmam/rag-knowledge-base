@@ -8,11 +8,17 @@ from typing import List
 
 from fastapi import APIRouter, HTTPException, UploadFile, File
 
-from models.schemas import DocumentUploadResponse, DocumentListItem
+from models.schemas import DocumentUploadResponse, DocumentListItem, DocumentSummary
 from services.doc_parser import parse_document, SUPPORTED_TYPES
 from services.chunker import chunk_text
 from services.embeddings import generate_embeddings
-from services.vector_store import add_document, delete_document as vs_delete, get_stats
+from services.vector_store import (
+    add_document,
+    delete_document as vs_delete,
+    get_stats,
+    get_document_chunks,
+)
+from services.summarizer import summarize_document
 
 router = APIRouter(prefix="/api/documents", tags=["documents"])
 
@@ -130,6 +136,32 @@ async def delete_document(filename: str):
 @router.get("/stats")
 async def document_stats():
     return get_stats()
+
+
+@router.post("/{filename}/summarize", response_model=DocumentSummary)
+async def summarize(filename: str, refresh: bool = False):
+    store = _load_store()
+    if filename not in store:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    cached = store[filename].get("summary")
+    if cached and not refresh:
+        return DocumentSummary(**cached, cached=True)
+
+    chunks = get_document_chunks(filename)
+    if not chunks:
+        raise HTTPException(status_code=400, detail="Document has no indexed content")
+
+    try:
+        summary = summarize_document(filename, chunks)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to summarize: {str(e)}")
+
+    store[filename]["summary"] = summary.model_dump(exclude={"cached"})
+    _save_store(store)
+    return summary
 
 
 @router.post("/load-samples")
