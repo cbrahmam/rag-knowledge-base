@@ -18,14 +18,14 @@ export default function useChat() {
     return pairs.slice(-5);
   }, [messages]);
 
-  const sendMessage = useCallback(async (question) => {
+  const sendMessage = useCallback(async (question, searchMode = 'hybrid') => {
     const userMsg = { role: 'user', content: question };
     setMessages(prev => [...prev, userMsg]);
     setIsLoading(true);
 
     try {
       const context = getContext();
-      const response = await askQuestion(question, context);
+      const response = await askQuestion(question, context, searchMode);
       const aiMsg = {
         role: 'assistant',
         content: response.answer,

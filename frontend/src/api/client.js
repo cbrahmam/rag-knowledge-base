@@ -27,11 +27,11 @@ export async function getStats() {
   return request('/documents/stats');
 }
 
-export async function askQuestion(question, context = null) {
+export async function askQuestion(question, context = null, searchMode = 'hybrid', alpha = 0.5) {
   return request('/query', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ question, context }),
+    body: JSON.stringify({ question, context, search_mode: searchMode, alpha }),
   });
 }
 
