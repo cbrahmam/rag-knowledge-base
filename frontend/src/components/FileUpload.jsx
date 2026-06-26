@@ -9,9 +9,10 @@ const ACCEPTED_TYPES = {
 
 const ACCEPT_STRING = '.pdf,.docx,.txt,.md';
 
-export default function FileUpload({ onUpload }) {
+export default function FileUpload({ onUpload, collections = [] }) {
   const [isDragging, setIsDragging] = useState(false);
   const [uploading, setUploading] = useState([]);
+  const [collection, setCollection] = useState('General');
   const inputRef = useRef(null);
 
   function handleDragOver(e) {
@@ -34,9 +35,10 @@ export default function FileUpload({ onUpload }) {
 
     setUploading(validFiles.map(f => ({ name: f.name, status: 'uploading' })));
 
+    const target = collection.trim() || 'General';
     for (let i = 0; i < validFiles.length; i++) {
       try {
-        await onUpload(validFiles[i]);
+        await onUpload(validFiles[i], target);
         setUploading(prev =>
           prev.map((item, idx) =>
             idx === i ? { ...item, status: 'done' } : item
@@ -73,6 +75,21 @@ export default function FileUpload({ onUpload }) {
 
   return (
     <div className="p-3">
+      <div className="mb-2">
+        <label className="text-[10px] font-medium text-text-secondary uppercase tracking-wide">Collection</label>
+        <input
+          type="text"
+          list="collection-options"
+          value={collection}
+          onChange={e => setCollection(e.target.value)}
+          placeholder="General"
+          className="w-full mt-1 text-xs px-3 py-1.5 border border-border rounded-lg bg-bg outline-none focus:border-accent transition-colors placeholder:text-text-secondary/50"
+        />
+        <datalist id="collection-options">
+          {collections.map(c => <option key={c} value={c} />)}
+        </datalist>
+      </div>
+
       <div
         onClick={handleClick}
         onDragOver={handleDragOver}
