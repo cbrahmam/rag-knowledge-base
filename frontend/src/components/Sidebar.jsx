@@ -2,7 +2,7 @@ import { useState } from 'react';
 import FileUpload from './FileUpload';
 import DocumentList from './DocumentList';
 
-export default function Sidebar({ documents, stats, onUpload, onDelete, onLoadSamples }) {
+export default function Sidebar({ documents, stats, onUpload, onDelete, onLoadSamples, onSummarize }) {
   const [search, setSearch] = useState('');
   const [loadingSamples, setLoadingSamples] = useState(false);
 
@@ -50,7 +50,7 @@ export default function Sidebar({ documents, stats, onUpload, onDelete, onLoadSa
 
       <div className="border-t border-border" />
 
-      <DocumentList documents={filtered} onDelete={onDelete} />
+      <DocumentList documents={filtered} onDelete={onDelete} onSummarize={onSummarize} />
 
       {search && filtered.length === 0 && (
         <div className="px-3 pb-3">
