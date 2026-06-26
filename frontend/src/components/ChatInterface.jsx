@@ -7,7 +7,7 @@ const SUGGESTED_QUESTIONS = [
   "Are there any deadlines or important dates mentioned?",
 ];
 
-export default function ChatInterface({ messages, isLoading, onSend, onClear, hasDocuments }) {
+export default function ChatInterface({ messages, isLoading, onSend, onClear, hasDocuments, activeCollection = null }) {
   const [input, setInput] = useState('');
   const [toast, setToast] = useState(null);
   const messagesEndRef = useRef(null);
@@ -69,7 +69,14 @@ export default function ChatInterface({ messages, isLoading, onSend, onClear, ha
   return (
     <div className="flex-1 flex flex-col overflow-hidden relative">
       <div className="flex items-center justify-between px-6 py-2 border-b border-border">
-        <h2 className="text-sm font-semibold text-text-primary">Chat</h2>
+        <div className="flex items-center gap-2">
+          <h2 className="text-sm font-semibold text-text-primary">Chat</h2>
+          {activeCollection && (
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-accent/10 text-accent">
+              scoped to {activeCollection}
+            </span>
+          )}
+        </div>
         <div className="flex items-center gap-3">
           {messages.length > 0 && (
             <>
