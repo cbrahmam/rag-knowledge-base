@@ -69,3 +69,20 @@ class QueryRequest(BaseModel):
 
 class MultiQueryRequest(BaseModel):
     questions: List[str]
+
+
+class QueryRecord(BaseModel):
+    question: str
+    confidence: str
+    processing_time_ms: int
+    chunks_searched: int
+    source_count: int
+    timestamp: str
+
+
+class AnalyticsSummary(BaseModel):
+    total_queries: int
+    avg_processing_time_ms: int
+    avg_source_count: float
+    confidence_distribution: dict
+    recent: List[QueryRecord]
