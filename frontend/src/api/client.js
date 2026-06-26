@@ -38,3 +38,15 @@ export async function askQuestion(question, context = null) {
 export async function loadSampleDocs() {
   return request('/documents/load-samples', { method: 'POST' });
 }
+
+export async function getAnalytics() {
+  return request('/analytics');
+}
+
+export async function getQueryHistory(limit = 50) {
+  return request(`/analytics/history?limit=${limit}`);
+}
+
+export async function clearQueryHistory() {
+  return request('/analytics/history', { method: 'DELETE' });
+}
