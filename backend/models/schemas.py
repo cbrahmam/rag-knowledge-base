@@ -69,3 +69,11 @@ class QueryRequest(BaseModel):
 
 class MultiQueryRequest(BaseModel):
     questions: List[str]
+
+
+class DocumentSummary(BaseModel):
+    filename: str
+    summary: str
+    key_points: List[str]
+    suggested_questions: List[str]
+    cached: bool = False
