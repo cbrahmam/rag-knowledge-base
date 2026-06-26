@@ -6,7 +6,7 @@ from typing import List, Optional
 
 import chromadb
 
-from models.schemas import Chunk, SearchResult
+from models.schemas import Chunk, SearchResult, DEFAULT_COLLECTION
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +30,11 @@ def _get_collection() -> chromadb.Collection:
     return _collection
 
 
-def add_document(chunks: List[Chunk], embeddings: List[List[float]]) -> None:
+def add_document(
+    chunks: List[Chunk],
+    embeddings: List[List[float]],
+    collection_name: str = DEFAULT_COLLECTION,
+) -> None:
     collection = _get_collection()
     ids = [f"{chunks[0].source_document}_{c.chunk_index}" for c in chunks]
     documents = [c.text for c in chunks]
@@ -41,6 +45,7 @@ def add_document(chunks: List[Chunk], embeddings: List[List[float]]) -> None:
             "source_page": c.source_page if c.source_page is not None else -1,
             "start_char": c.start_char,
             "end_char": c.end_char,
+            "collection": collection_name,
         }
         for c in chunks
     ]
@@ -54,16 +59,22 @@ def add_document(chunks: List[Chunk], embeddings: List[List[float]]) -> None:
     logger.info("Added %d chunks for '%s' to vector store", len(chunks), chunks[0].source_document)
 
 
-def search(query_embedding: List[float], n_results: int = 5) -> List[SearchResult]:
+def search(
+    query_embedding: List[float],
+    n_results: int = 5,
+    collection_name: Optional[str] = None,
+) -> List[SearchResult]:
     collection = _get_collection()
 
     if collection.count() == 0:
         return []
 
+    where = {"collection": collection_name} if collection_name else None
     results = collection.query(
         query_embeddings=[query_embedding],
         n_results=min(n_results, collection.count()),
         include=["documents", "metadatas", "distances"],
+        where=where,
     )
 
     search_results = []
@@ -91,6 +102,34 @@ def delete_document(filename: str) -> int:
         logger.info("Deleted %d chunks for '%s' from vector store", len(existing["ids"]), filename)
         return len(existing["ids"])
     return 0
+
+
+def list_collections() -> List[dict]:
+    """Group indexed chunks by collection, with document and chunk counts.
+
+    Chunks indexed before collections existed have no 'collection' metadata;
+    they're reported under the default collection name.
+    """
+    collection = _get_collection()
+    if collection.count() == 0:
+        return []
+
+    results = collection.get(include=["metadatas"])
+    by_collection: dict[str, dict] = {}
+    for meta in results["metadatas"]:
+        name = meta.get("collection", DEFAULT_COLLECTION)
+        entry = by_collection.setdefault(name, {"documents": set(), "chunk_count": 0})
+        entry["documents"].add(meta["source_document"])
+        entry["chunk_count"] += 1
+
+    return [
+        {
+            "name": name,
+            "document_count": len(entry["documents"]),
+            "chunk_count": entry["chunk_count"],
+        }
+        for name, entry in sorted(by_collection.items())
+    ]
 
 
 def get_stats() -> dict:
