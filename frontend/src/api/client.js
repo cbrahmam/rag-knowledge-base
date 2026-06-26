@@ -9,14 +9,19 @@ async function request(url, options = {}) {
   return response.json();
 }
 
-export async function uploadDocument(file) {
+export async function uploadDocument(file, collection = 'General') {
   const formData = new FormData();
   formData.append('file', file);
+  formData.append('collection', collection);
   return request('/documents/upload', { method: 'POST', body: formData });
 }
 
 export async function listDocuments() {
   return request('/documents');
+}
+
+export async function listCollections() {
+  return request('/documents/collections');
 }
 
 export async function deleteDocument(filename) {
@@ -27,11 +32,11 @@ export async function getStats() {
   return request('/documents/stats');
 }
 
-export async function askQuestion(question, context = null) {
+export async function askQuestion(question, context = null, collection = null) {
   return request('/query', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ question, context }),
+    body: JSON.stringify({ question, context, collection }),
   });
 }
 
