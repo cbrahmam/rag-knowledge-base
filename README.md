@@ -17,6 +17,7 @@ DocuMind creates a searchable AI knowledge base from your documents. Upload file
 - **Vector embeddings** — Local embeddings with sentence-transformers (no API costs)
 - **Natural language Q&A** — Ask questions and get accurate answers powered by Claude
 - **Source citations** — Every answer includes the exact documents and pages it came from
+- **Document summaries** — One-click AI summary, key points, and suggested questions per document
 - **Confidence scoring** — Know how reliable each answer is (high/medium/low)
 - **Conversation context** — Follow-up questions understand the conversation history
 - **Chat export** — Download conversations as Markdown or copy to clipboard
@@ -58,6 +59,15 @@ RAG (Retrieval-Augmented Generation) solves the problem of LLMs not knowing abou
 3. **Generation**: The most relevant chunks are sent as context to Claude, which generates an answer grounded in your actual documents
 
 This approach ensures answers are factual (grounded in your docs) and traceable (with source citations).
+
+## Document summaries
+
+Click **Summary** on any document (hover the card) to get an AI-generated overview, key points,
+and suggested questions. Clicking a suggested question drops it straight into the chat. Summaries
+are cached after the first generation.
+
+- `POST /api/documents/{filename}/summarize` — returns `{ summary, key_points, suggested_questions, cached }`
+- `POST /api/documents/{filename}/summarize?refresh=true` — regenerate, bypassing the cache
 
 ## Getting Started
 
