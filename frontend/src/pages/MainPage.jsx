@@ -2,12 +2,14 @@ import { useState, useEffect, useCallback } from 'react';
 import Layout from '../components/Layout';
 import Sidebar from '../components/Sidebar';
 import ChatInterface from '../components/ChatInterface';
+import SummaryModal from '../components/SummaryModal';
 import useChat from '../hooks/useChat';
 import { uploadDocument, listDocuments, deleteDocument, getStats, loadSampleDocs } from '../api/client';
 
 export default function MainPage() {
   const [documents, setDocuments] = useState([]);
   const [stats, setStats] = useState({ total_documents: 0, total_chunks: 0 });
+  const [summaryFor, setSummaryFor] = useState(null);
   const { messages, isLoading, sendMessage, clearChat } = useChat();
 
   const refresh = useCallback(async () => {
@@ -43,6 +45,7 @@ export default function MainPage() {
           onUpload={handleUpload}
           onDelete={handleDelete}
           onLoadSamples={handleLoadSamples}
+          onSummarize={setSummaryFor}
         />
       }
     >
@@ -53,6 +56,13 @@ export default function MainPage() {
         onClear={clearChat}
         hasDocuments={stats.total_chunks > 0}
       />
+      {summaryFor && (
+        <SummaryModal
+          filename={summaryFor}
+          onClose={() => setSummaryFor(null)}
+          onAskQuestion={sendMessage}
+        />
+      )}
     </Layout>
   );
 }
