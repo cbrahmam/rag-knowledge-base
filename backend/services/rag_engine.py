@@ -11,6 +11,7 @@ import anthropic
 from models.schemas import SearchResult, SourceCitation, RAGResponse
 from services.embeddings import generate_embeddings
 from services.vector_store import search
+from services import analytics
 
 logger = logging.getLogger(__name__)
 
@@ -88,13 +89,15 @@ def query(
 
     if not relevant_results:
         elapsed = int((time.time() - start_time) * 1000)
-        return RAGResponse(
+        no_match = RAGResponse(
             answer="I couldn't find information about this in the uploaded documents.",
             sources=[],
             confidence="low",
             chunks_searched=len(results),
             processing_time_ms=elapsed,
         )
+        analytics.log_query(question, no_match)
+        return no_match
 
     prompt = _build_context_prompt(question, relevant_results, conversation_context)
 
@@ -127,10 +130,12 @@ def query(
     elapsed = int((time.time() - start_time) * 1000)
     confidence = _determine_confidence(relevant_results)
 
-    return RAGResponse(
+    response = RAGResponse(
         answer=answer_text,
         sources=sources,
         confidence=confidence,
         chunks_searched=len(results),
         processing_time_ms=elapsed,
     )
+    analytics.log_query(question, response)
+    return response
