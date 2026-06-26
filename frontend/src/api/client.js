@@ -38,3 +38,9 @@ export async function askQuestion(question, context = null) {
 export async function loadSampleDocs() {
   return request('/documents/load-samples', { method: 'POST' });
 }
+
+export async function summarizeDocument(filename, refresh = false) {
+  return request(`/documents/${encodeURIComponent(filename)}/summarize?refresh=${refresh}`, {
+    method: 'POST',
+  });
+}
