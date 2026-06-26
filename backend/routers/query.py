@@ -21,7 +21,7 @@ async def ask_question(request: QueryRequest):
         )
 
     try:
-        return query(request.question, request.context)
+        return query(request.question, request.context, request.collection)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
