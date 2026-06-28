@@ -51,16 +51,16 @@ export default function FileUpload({ onUpload, collections = [] }) {
             idx === i ? { ...item, status: 'done' } : item
           )
         );
-      } catch {
+      } catch (err) {
         setUploading(prev =>
           prev.map((item, idx) =>
-            idx === i ? { ...item, status: 'error' } : item
+            idx === i ? { ...item, status: 'error', error: err.message } : item
           )
         );
       }
     }
 
-    setTimeout(() => setUploading([]), 2000);
+    setTimeout(() => setUploading([]), 4000);
   }
 
   function handleDrop(e) {
@@ -176,7 +176,10 @@ export default function FileUpload({ onUpload, collections = [] }) {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               )}
-              <span className="truncate text-text-secondary">{item.name}</span>
+              <span className="truncate text-text-secondary" title={item.error || item.name}>{item.name}</span>
+              {item.status === 'error' && item.error && (
+                <span className="text-[10px] text-danger truncate" title={item.error}>{item.error}</span>
+              )}
             </div>
           ))}
         </div>
