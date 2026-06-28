@@ -17,8 +17,10 @@ function formatDate(iso) {
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-export default function DocumentCard({ doc, onDelete, onSummarize, onPreview }) {
+export default function DocumentCard({ doc, onDelete, onSummarize, onPreview, onMove, collections = [] }) {
   const [confirming, setConfirming] = useState(false);
+
+  const moveTargets = collections.filter(c => c !== doc.collection);
 
   function handleDelete() {
     if (confirming) {
@@ -58,6 +60,17 @@ export default function DocumentCard({ doc, onDelete, onSummarize, onPreview }) 
       </button>
 
       <div className="flex items-center gap-1">
+        {onMove && moveTargets.length > 0 && (
+          <select
+            value=""
+            onChange={e => { if (e.target.value) onMove(doc.filename, e.target.value); }}
+            title="Move to collection"
+            className="opacity-0 group-hover:opacity-100 text-[10px] px-1 py-1 rounded border border-border bg-bg text-text-secondary outline-none focus:border-accent transition-all"
+          >
+            <option value="">Move…</option>
+            {moveTargets.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+        )}
         {onSummarize && (
           <button
             onClick={() => onSummarize(doc.filename)}
