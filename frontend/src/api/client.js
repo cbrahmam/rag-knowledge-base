@@ -52,6 +52,14 @@ export async function loadSampleDocs() {
   return request('/documents/load-samples', { method: 'POST' });
 }
 
+export async function askMultiple(questions) {
+  return request('/query/multi', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ questions }),
+  });
+}
+
 export async function getAnalytics() {
   return request('/analytics');
 }

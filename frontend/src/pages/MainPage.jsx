@@ -6,6 +6,7 @@ import AnalyticsPanel from '../components/AnalyticsPanel';
 import SummaryModal from '../components/SummaryModal';
 import ConversationsModal from '../components/ConversationsModal';
 import DocumentPreviewModal from '../components/DocumentPreviewModal';
+import BatchQuestionsModal from '../components/BatchQuestionsModal';
 import useChat from '../hooks/useChat';
 import {
   uploadDocument,
@@ -27,6 +28,7 @@ export default function MainPage() {
   const [summaryFor, setSummaryFor] = useState(null);
   const [showConversations, setShowConversations] = useState(false);
   const [previewFor, setPreviewFor] = useState(null);
+  const [showBatch, setShowBatch] = useState(false);
   const { messages, isLoading, sendMessage, clearChat, loadMessages } = useChat();
 
   const refresh = useCallback(async () => {
@@ -104,6 +106,7 @@ export default function MainPage() {
         activeCollection={activeCollection}
         onSave={handleSaveConversation}
         onOpenSaved={() => setShowConversations(true)}
+        onOpenBatch={() => setShowBatch(true)}
       />
       {showAnalytics && <AnalyticsPanel onClose={() => setShowAnalytics(false)} />}
       {summaryFor && (
@@ -122,6 +125,7 @@ export default function MainPage() {
       {previewFor && (
         <DocumentPreviewModal filename={previewFor} onClose={() => setPreviewFor(null)} />
       )}
+      {showBatch && <BatchQuestionsModal onClose={() => setShowBatch(false)} />}
     </Layout>
   );
 }

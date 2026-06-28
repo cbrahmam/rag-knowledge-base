@@ -16,6 +16,7 @@ DocuMind creates a searchable AI knowledge base from your documents. Upload file
 - **Adaptive chunking** — Content-type-aware splitting (Markdown chunks per section); size/overlap auto-tuned per file type and overridable per upload
 - **Vector embeddings** — Local embeddings with sentence-transformers (no API costs)
 - **Natural language Q&A** — Ask questions and get accurate answers powered by Claude
+- **Batch questions** — Ask up to 5 questions at once and get all answers together (`POST /api/query/multi`)
 - **Streaming answers** — Responses stream token-by-token over Server-Sent Events for instant feedback
 - **Hybrid search** — Blend semantic (vector) and keyword (BM25) retrieval, switchable per query
 - **Source citations** — Every answer includes the exact documents and pages it came from
