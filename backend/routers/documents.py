@@ -8,7 +8,7 @@ from typing import List
 
 from fastapi import APIRouter, HTTPException, UploadFile, File
 
-from models.schemas import DocumentUploadResponse, DocumentListItem
+from models.schemas import DocumentUploadResponse, DocumentListItem, DocumentContent
 from services.doc_parser import parse_document, SUPPORTED_TYPES
 from services.chunker import chunk_text
 from services.embeddings import generate_embeddings
@@ -130,6 +130,26 @@ async def delete_document(filename: str):
 @router.get("/stats")
 async def document_stats():
     return get_stats()
+
+
+@router.get("/{filename}/content", response_model=DocumentContent)
+async def document_content(filename: str):
+    store = _load_store()
+    if filename not in store:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    file_path = UPLOAD_DIR / filename
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="Document file is no longer available")
+
+    parsed = parse_document(str(file_path), filename)
+    return DocumentContent(
+        filename=filename,
+        file_type=parsed.file_type,
+        total_characters=parsed.total_characters,
+        total_pages=parsed.total_pages,
+        content=parsed.text_content,
+    )
 
 
 @router.post("/load-samples")
