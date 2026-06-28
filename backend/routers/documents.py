@@ -284,6 +284,7 @@ async def load_sample_documents():
                 "uploaded_at": datetime.now(timezone.utc).isoformat(),
                 "size_bytes": len(content),
                 "collection": "Samples",
+                "content_hash": hashlib.sha256(content).hexdigest(),
             }
             _save_store(store)
 
