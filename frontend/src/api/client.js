@@ -38,3 +38,15 @@ export async function askQuestion(question, context = null) {
 export async function loadSampleDocs() {
   return request('/documents/load-samples', { method: 'POST' });
 }
+
+export async function submitFeedback({ question, answer, rating, confidence }) {
+  return request('/feedback', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ question, answer, rating, confidence }),
+  });
+}
+
+export async function getFeedbackSummary() {
+  return request('/feedback');
+}
