@@ -34,11 +34,11 @@ export async function getStats() {
   return request('/documents/stats');
 }
 
-export async function askQuestion(question, context = null, searchMode = 'hybrid', collection = null) {
+export async function askQuestion(question, context = null, searchMode = 'hybrid', collection = null, nResults = 5) {
   return request('/query', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ question, context, search_mode: searchMode, collection }),
+    body: JSON.stringify({ question, context, search_mode: searchMode, collection, n_results: nResults }),
   });
 }
 
@@ -68,12 +68,12 @@ export async function clearQueryHistory() {
  * @param {Array|null} context
  * @param {{searchMode?: string, collection?: string|null, onToken: (text: string) => void, onDone: (meta: object) => void, onError: (err: Error) => void}} handlers
  */
-export async function askQuestionStream(question, context, { searchMode = 'hybrid', collection = null, onToken, onDone, onError }) {
+export async function askQuestionStream(question, context, { searchMode = 'hybrid', collection = null, nResults = 5, onToken, onDone, onError }) {
   try {
     const response = await fetch(`${BASE_URL}/query/stream`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ question, context, search_mode: searchMode, collection }),
+      body: JSON.stringify({ question, context, search_mode: searchMode, collection, n_results: nResults }),
     });
 
     if (!response.ok) {
