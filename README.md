@@ -20,6 +20,7 @@ DocuMind creates a searchable AI knowledge base from your documents. Upload file
 - **Confidence scoring** — Know how reliable each answer is (high/medium/low)
 - **Conversation context** — Follow-up questions understand the conversation history
 - **Chat export** — Download conversations as Markdown or copy to clipboard
+- **Saved conversations** — Save chat sessions and restore them later
 - **Sample documents** — Included sample docs for instant testing
 
 ## Tech Stack
@@ -58,6 +59,17 @@ RAG (Retrieval-Augmented Generation) solves the problem of LLMs not knowing abou
 3. **Generation**: The most relevant chunks are sent as context to Claude, which generates an answer grounded in your actual documents
 
 This approach ensures answers are factual (grounded in your docs) and traceable (with source citations).
+
+## Saved conversations
+
+Use **Save** in the chat header to store the current session, and **Saved** to browse, restore,
+or delete past sessions. Conversations are stored locally (`backend/conversations_store.json`,
+gitignored).
+
+- `POST /api/conversations` — save `{ messages, title? }` (title auto-derived from the first question)
+- `GET /api/conversations` — list (id, title, message count, updated_at)
+- `GET /api/conversations/{id}` — full conversation
+- `PUT /api/conversations/{id}` — update; `DELETE /api/conversations/{id}` — remove
 
 ## Getting Started
 
