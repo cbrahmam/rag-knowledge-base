@@ -29,6 +29,8 @@ class DocumentUploadResponse(BaseModel):
     total_characters: int
     status: str
     message: str
+    chunk_size: Optional[int] = None
+    overlap: Optional[int] = None
 
 
 class DocumentListItem(BaseModel):
