@@ -23,6 +23,7 @@ DocuMind creates a searchable AI knowledge base from your documents. Upload file
 - **Conversation context** — Follow-up questions understand the conversation history
 - **Chat export** — Download conversations as Markdown or copy to clipboard
 - **Collections** — Organize documents into named collections and scope questions to one
+- **Query analytics** — Usage dashboard: query volume, average latency, confidence mix, recent history
 - **Sample documents** — Included sample docs for instant testing
 
 ## Tech Stack
@@ -61,6 +62,16 @@ RAG (Retrieval-Augmented Generation) solves the problem of LLMs not knowing abou
 3. **Generation**: The most relevant chunks are sent as context to Claude, which generates an answer grounded in your actual documents
 
 This approach ensures answers are factual (grounded in your docs) and traceable (with source citations).
+
+## Analytics
+
+Every answered query is logged locally (`backend/analytics_store.json`, gitignored). The
+analytics dashboard (header → **Analytics**) surfaces total query volume, average response
+time, average sources per answer, the confidence distribution, and recent questions.
+
+- `GET /api/analytics` — summary (volume, latency, confidence distribution, recent)
+- `GET /api/analytics/history?limit=N` — recent query records
+- `DELETE /api/analytics/history` — clear the log
 
 ## Getting Started
 

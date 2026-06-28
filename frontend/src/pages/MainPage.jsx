@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Layout from '../components/Layout';
 import Sidebar from '../components/Sidebar';
 import ChatInterface from '../components/ChatInterface';
+import AnalyticsPanel from '../components/AnalyticsPanel';
 import useChat from '../hooks/useChat';
 import {
   uploadDocument,
@@ -17,6 +18,7 @@ export default function MainPage() {
   const [collections, setCollections] = useState([]);
   const [activeCollection, setActiveCollection] = useState(null); // null = All
   const [stats, setStats] = useState({ total_documents: 0, total_chunks: 0 });
+  const [showAnalytics, setShowAnalytics] = useState(false);
   const { messages, isLoading, sendMessage, clearChat } = useChat();
 
   const refresh = useCallback(async () => {
@@ -57,6 +59,7 @@ export default function MainPage() {
   return (
     <Layout
       stats={stats}
+      onOpenAnalytics={() => setShowAnalytics(true)}
       sidebar={
         <Sidebar
           documents={visibleDocuments}
@@ -78,6 +81,7 @@ export default function MainPage() {
         hasDocuments={stats.total_chunks > 0}
         activeCollection={activeCollection}
       />
+      {showAnalytics && <AnalyticsPanel onClose={() => setShowAnalytics(false)} />}
     </Layout>
   );
 }

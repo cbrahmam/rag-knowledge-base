@@ -11,6 +11,7 @@ import anthropic
 from models.schemas import SearchResult, SourceCitation, RAGResponse
 from services.embeddings import generate_embeddings
 from services.vector_store import search, keyword_search, hybrid_search
+from services import analytics
 
 
 def _retrieve(
@@ -147,13 +148,15 @@ def query(
 
     if not relevant_results:
         elapsed = int((time.time() - start_time) * 1000)
-        return RAGResponse(
+        no_match = RAGResponse(
             answer="I couldn't find information about this in the uploaded documents.",
             sources=[],
             confidence="low",
             chunks_searched=len(results),
             processing_time_ms=elapsed,
         )
+        analytics.log_query(question, no_match)
+        return no_match
 
     prompt = _build_context_prompt(question, relevant_results, conversation_context)
 
@@ -186,13 +189,15 @@ def query(
     elapsed = int((time.time() - start_time) * 1000)
     confidence = _determine_confidence(relevant_results)
 
-    return RAGResponse(
+    response = RAGResponse(
         answer=answer_text,
         sources=sources,
         confidence=confidence,
         chunks_searched=len(results),
         processing_time_ms=elapsed,
     )
+    analytics.log_query(question, response)
+    return response
 
 
 def query_stream(
@@ -209,7 +214,8 @@ def query_stream(
       {"type": "done", ...}            — final event with sources + metadata
 
     The retrieval step is identical to ``query`` (honoring search_mode/alpha
-    and the optional collection); only generation streams.
+    and the optional collection); only generation streams. Each answered
+    query is recorded to analytics, same as the non-streaming path.
     """
     start_time = time.time()
 
@@ -217,14 +223,19 @@ def query_stream(
     relevant_results = [r for r in results if r.similarity_score >= SIMILARITY_THRESHOLD]
 
     if not relevant_results:
+        elapsed = int((time.time() - start_time) * 1000)
         fallback = "I couldn't find information about this in the uploaded documents."
+        analytics.log_query(question, RAGResponse(
+            answer=fallback, sources=[], confidence="low",
+            chunks_searched=len(results), processing_time_ms=elapsed,
+        ))
         yield {"type": "token", "text": fallback}
         yield {
             "type": "done",
             "sources": [],
             "confidence": "low",
             "chunks_searched": len(results),
-            "processing_time_ms": int((time.time() - start_time) * 1000),
+            "processing_time_ms": elapsed,
         }
         return
 
@@ -240,20 +251,27 @@ def query_stream(
         for text in stream.text_stream:
             yield {"type": "token", "text": text}
 
-    sources = [
+    citations = [
         SourceCitation(
             document=r.source_document,
             page=r.source_page,
             chunk_text=r.text[:200],
             relevance_score=r.similarity_score,
-        ).model_dump()
+        )
         for r in relevant_results
     ]
+    confidence = _determine_confidence(relevant_results)
+    elapsed = int((time.time() - start_time) * 1000)
+
+    analytics.log_query(question, RAGResponse(
+        answer="", sources=citations, confidence=confidence,
+        chunks_searched=len(results), processing_time_ms=elapsed,
+    ))
 
     yield {
         "type": "done",
-        "sources": sources,
-        "confidence": _determine_confidence(relevant_results),
+        "sources": [c.model_dump() for c in citations],
+        "confidence": confidence,
         "chunks_searched": len(results),
-        "processing_time_ms": int((time.time() - start_time) * 1000),
+        "processing_time_ms": elapsed,
     }
