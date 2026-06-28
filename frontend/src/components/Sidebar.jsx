@@ -2,9 +2,21 @@ import { useState } from 'react';
 import FileUpload from './FileUpload';
 import DocumentList from './DocumentList';
 
-export default function Sidebar({ documents, stats, onUpload, onDelete, onLoadSamples }) {
+export default function Sidebar({
+  documents,
+  collections = [],
+  activeCollection = null,
+  onSelectCollection,
+  stats,
+  onUpload,
+  onDelete,
+  onLoadSamples,
+  onSummarize,
+  onPreview,
+}) {
   const [search, setSearch] = useState('');
   const [loadingSamples, setLoadingSamples] = useState(false);
+  const collectionNames = collections.map(c => c.name);
 
   const filtered = search
     ? documents.filter(d => d.filename.toLowerCase().includes(search.toLowerCase()))
@@ -34,7 +46,24 @@ export default function Sidebar({ documents, stats, onUpload, onDelete, onLoadSa
         )}
       </div>
 
-      <FileUpload onUpload={onUpload} />
+      <FileUpload onUpload={onUpload} collections={collectionNames} />
+
+      {collections.length > 0 && (
+        <div className="px-3 pb-2">
+          <select
+            value={activeCollection || ''}
+            onChange={e => onSelectCollection?.(e.target.value || null)}
+            className="w-full text-xs px-3 py-1.5 border border-border rounded-lg bg-bg outline-none focus:border-accent transition-colors text-text-primary"
+          >
+            <option value="">All collections</option>
+            {collections.map(c => (
+              <option key={c.name} value={c.name}>
+                {c.name} ({c.document_count})
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {documents.length > 3 && (
         <div className="px-3 pb-2">
@@ -50,7 +79,7 @@ export default function Sidebar({ documents, stats, onUpload, onDelete, onLoadSa
 
       <div className="border-t border-border" />
 
-      <DocumentList documents={filtered} onDelete={onDelete} />
+      <DocumentList documents={filtered} onDelete={onDelete} onSummarize={onSummarize} onPreview={onPreview} />
 
       {search && filtered.length === 0 && (
         <div className="px-3 pb-3">

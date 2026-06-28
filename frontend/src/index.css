@@ -13,11 +13,38 @@
   --color-border: #E5E7EB;
 }
 
+/* Dark theme: override the design tokens so every `*-bg`, `*-surface`,
+   `*-text-*` and `*-border` utility re-colors automatically. Toggled by
+   setting data-theme="dark" on the document root. */
+:root[data-theme="dark"] {
+  --color-bg: #0F172A;
+  --color-surface: #1E293B;
+  --color-text-primary: #F1F5F9;
+  --color-text-secondary: #94A3B8;
+  --color-border: #334155;
+  --color-accent-hover: #60A5FA;
+}
+
 body {
   margin: 0;
   background-color: var(--color-bg);
   color: var(--color-text-primary);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Tailwind's `prose` ships fixed light-mode grays, which are unreadable on
+   the dark surface. Re-point prose text/headings/code at the theme tokens so
+   rendered Markdown answers stay legible in dark mode. */
+:root[data-theme="dark"] .prose {
+  color: var(--color-text-primary);
+}
+:root[data-theme="dark"] .prose :where(p, li, h1, h2, h3, h4, h5, h6, strong, blockquote, th, td, a) {
+  color: var(--color-text-primary);
+}
+:root[data-theme="dark"] .prose :where(code) {
+  color: var(--color-text-primary);
+  background-color: var(--color-bg);
 }
 
 @keyframes fadeIn {

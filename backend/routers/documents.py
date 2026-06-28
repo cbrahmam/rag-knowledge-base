@@ -4,15 +4,29 @@ import json
 import os
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
-from fastapi import APIRouter, HTTPException, UploadFile, File
+from fastapi import APIRouter, HTTPException, UploadFile, File, Form
 
-from models.schemas import DocumentUploadResponse, DocumentListItem
+from models.schemas import (
+    DocumentUploadResponse,
+    DocumentListItem,
+    CollectionInfo,
+    DocumentSummary,
+    DocumentContent,
+    DEFAULT_COLLECTION,
+)
 from services.doc_parser import parse_document, SUPPORTED_TYPES
-from services.chunker import chunk_text
+from services.chunker import chunk_document, adaptive_params
 from services.embeddings import generate_embeddings
-from services.vector_store import add_document, delete_document as vs_delete, get_stats
+from services.vector_store import (
+    add_document,
+    delete_document as vs_delete,
+    get_stats,
+    list_collections,
+    get_document_chunks,
+)
+from services.summarizer import summarize_document
 
 router = APIRouter(prefix="/api/documents", tags=["documents"])
 
@@ -36,7 +50,13 @@ def _save_store(store: dict) -> None:
 
 
 @router.post("/upload", response_model=DocumentUploadResponse)
-async def upload_document(file: UploadFile = File(...)):
+async def upload_document(
+    file: UploadFile = File(...),
+    collection: str = Form(DEFAULT_COLLECTION),
+    chunk_size: Optional[int] = Form(None),
+    overlap: Optional[int] = Form(None),
+):
+    collection = collection.strip() or DEFAULT_COLLECTION
     ext = Path(file.filename).suffix.lower()
     if ext not in SUPPORTED_TYPES:
         raise HTTPException(
@@ -54,15 +74,22 @@ async def upload_document(file: UploadFile = File(...)):
 
     try:
         parsed = parse_document(str(file_path), file.filename)
-        chunks = chunk_text(
+        chunks = chunk_document(
             parsed.text_content,
             source_document=file.filename,
+            file_type=parsed.file_type,
             source_pages=parsed.pages,
+            chunk_size=chunk_size,
+            overlap=overlap,
         )
+
+        default_size, default_overlap = adaptive_params(parsed.file_type)
+        used_size = chunk_size or default_size
+        used_overlap = overlap if overlap is not None else default_overlap
 
         chunk_texts = [c.text for c in chunks]
         embeddings = generate_embeddings(chunk_texts)
-        add_document(chunks, embeddings)
+        add_document(chunks, embeddings, collection_name=collection)
 
         store = _load_store()
         store[file.filename] = {
@@ -71,6 +98,9 @@ async def upload_document(file: UploadFile = File(...)):
             "total_characters": parsed.total_characters,
             "uploaded_at": datetime.now(timezone.utc).isoformat(),
             "size_bytes": len(content),
+            "collection": collection,
+            "chunk_size": used_size,
+            "overlap": used_overlap,
         }
         _save_store(store)
 
@@ -81,6 +111,9 @@ async def upload_document(file: UploadFile = File(...)):
             total_characters=parsed.total_characters,
             status="processed",
             message=f"Successfully processed {file.filename} into {len(chunks)} chunks",
+            collection=collection,
+            chunk_size=used_size,
+            overlap=used_overlap,
         )
 
     except ValueError as e:
@@ -104,8 +137,14 @@ async def list_documents():
             total_chunks=meta["total_chunks"],
             uploaded_at=meta["uploaded_at"],
             size_bytes=meta["size_bytes"],
+            collection=meta.get("collection", DEFAULT_COLLECTION),
         ))
     return documents
+
+
+@router.get("/collections", response_model=List[CollectionInfo])
+async def get_collections():
+    return list_collections()
 
 
 @router.delete("/{filename}")
@@ -132,6 +171,52 @@ async def document_stats():
     return get_stats()
 
 
+@router.post("/{filename}/summarize", response_model=DocumentSummary)
+async def summarize(filename: str, refresh: bool = False):
+    store = _load_store()
+    if filename not in store:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    cached = store[filename].get("summary")
+    if cached and not refresh:
+        return DocumentSummary(**cached, cached=True)
+
+    chunks = get_document_chunks(filename)
+    if not chunks:
+        raise HTTPException(status_code=400, detail="Document has no indexed content")
+
+    try:
+        summary = summarize_document(filename, chunks)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to summarize: {str(e)}")
+
+    store[filename]["summary"] = summary.model_dump(exclude={"cached"})
+    _save_store(store)
+    return summary
+
+
+@router.get("/{filename}/content", response_model=DocumentContent)
+async def document_content(filename: str):
+    store = _load_store()
+    if filename not in store:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    file_path = UPLOAD_DIR / filename
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="Document file is no longer available")
+
+    parsed = parse_document(str(file_path), filename)
+    return DocumentContent(
+        filename=filename,
+        file_type=parsed.file_type,
+        total_characters=parsed.total_characters,
+        total_pages=parsed.total_pages,
+        content=parsed.text_content,
+    )
+
+
 @router.post("/load-samples")
 async def load_sample_documents():
     sample_dir = Path(__file__).parent.parent.parent / "sample-docs"
@@ -149,14 +234,15 @@ async def load_sample_documents():
 
         try:
             parsed = parse_document(str(dest), file_path.name)
-            chunks = chunk_text(
+            chunks = chunk_document(
                 parsed.text_content,
                 source_document=file_path.name,
+                file_type=parsed.file_type,
                 source_pages=parsed.pages,
             )
             chunk_texts = [c.text for c in chunks]
             embeddings = generate_embeddings(chunk_texts)
-            add_document(chunks, embeddings)
+            add_document(chunks, embeddings, collection_name="Samples")
 
             store = _load_store()
             store[file_path.name] = {
@@ -165,6 +251,7 @@ async def load_sample_documents():
                 "total_characters": parsed.total_characters,
                 "uploaded_at": datetime.now(timezone.utc).isoformat(),
                 "size_bytes": len(content),
+                "collection": "Samples",
             }
             _save_store(store)
 

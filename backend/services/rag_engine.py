@@ -4,13 +4,30 @@ import json
 import logging
 import os
 import time
-from typing import List, Optional
+from typing import Iterator, List, Optional
 
 import anthropic
 
 from models.schemas import SearchResult, SourceCitation, RAGResponse
 from services.embeddings import generate_embeddings
-from services.vector_store import search
+from services.vector_store import search, keyword_search, hybrid_search
+from services import analytics
+
+
+def _retrieve(
+    question: str,
+    search_mode: str,
+    alpha: float,
+    collection: Optional[str] = None,
+) -> List[SearchResult]:
+    """Dispatch retrieval to the selected strategy, optionally scoped to a collection."""
+    if search_mode == "keyword":
+        return keyword_search(question, n_results=5, collection_name=collection)
+
+    query_embedding = generate_embeddings([question])[0]
+    if search_mode == "semantic":
+        return search(query_embedding, n_results=5, collection_name=collection)
+    return hybrid_search(question, query_embedding, n_results=5, alpha=alpha, collection_name=collection)
 
 logger = logging.getLogger(__name__)
 
@@ -57,6 +74,47 @@ Instructions:
 - Return your response as JSON with fields: answer, sources (list of filenames used), confidence (high/medium/low)"""
 
 
+def _build_streaming_prompt(
+    question: str,
+    results: List[SearchResult],
+    conversation_context: Optional[List[dict]] = None,
+) -> str:
+    """Prompt variant for streaming: asks for a direct prose answer.
+
+    Unlike the non-streaming path, we don't ask Claude to wrap the answer in
+    JSON — that would force us to buffer the whole response before parsing.
+    Sources and confidence are computed on the backend from the retrieved
+    chunks, so the model only needs to produce the answer text.
+    """
+    context_parts = []
+    for r in results:
+        page_info = f", Page: {r.source_page}" if r.source_page else ""
+        context_parts.append(f"[Source: {r.source_document}{page_info}]\n{r.text}")
+
+    context_block = "\n---\n".join(context_parts)
+
+    conversation_section = ""
+    if conversation_context:
+        pairs = []
+        for item in conversation_context[-5:]:
+            pairs.append(f"Q: {item.get('question', '')}\nA: {item.get('answer', '')}")
+        conversation_section = f"\nPrevious conversation:\n{'---'.join(pairs)}\n"
+
+    return f"""Context documents:
+---
+{context_block}
+---
+{conversation_section}
+Question: {question}
+
+Instructions:
+- Answer based ONLY on the context above
+- Cite sources inline using [Source: filename] format
+- If the context doesn't contain the answer, say "I couldn't find information about this in the uploaded documents"
+- Be concise but thorough
+- Write a direct, well-formatted answer (Markdown allowed). Do NOT wrap it in JSON."""
+
+
 def _get_client() -> anthropic.Anthropic:
     api_key = os.getenv("ANTHROPIC_API_KEY")
     if not api_key:
@@ -78,23 +136,27 @@ def _determine_confidence(results: List[SearchResult]) -> str:
 def query(
     question: str,
     conversation_context: Optional[List[dict]] = None,
+    search_mode: str = "hybrid",
+    alpha: float = 0.5,
+    collection: Optional[str] = None,
 ) -> RAGResponse:
     start_time = time.time()
 
-    query_embedding = generate_embeddings([question])[0]
-    results = search(query_embedding, n_results=5)
+    results = _retrieve(question, search_mode, alpha, collection)
 
     relevant_results = [r for r in results if r.similarity_score >= SIMILARITY_THRESHOLD]
 
     if not relevant_results:
         elapsed = int((time.time() - start_time) * 1000)
-        return RAGResponse(
+        no_match = RAGResponse(
             answer="I couldn't find information about this in the uploaded documents.",
             sources=[],
             confidence="low",
             chunks_searched=len(results),
             processing_time_ms=elapsed,
         )
+        analytics.log_query(question, no_match)
+        return no_match
 
     prompt = _build_context_prompt(question, relevant_results, conversation_context)
 
@@ -127,10 +189,89 @@ def query(
     elapsed = int((time.time() - start_time) * 1000)
     confidence = _determine_confidence(relevant_results)
 
-    return RAGResponse(
+    response = RAGResponse(
         answer=answer_text,
         sources=sources,
         confidence=confidence,
         chunks_searched=len(results),
         processing_time_ms=elapsed,
     )
+    analytics.log_query(question, response)
+    return response
+
+
+def query_stream(
+    question: str,
+    conversation_context: Optional[List[dict]] = None,
+    search_mode: str = "hybrid",
+    alpha: float = 0.5,
+    collection: Optional[str] = None,
+) -> Iterator[dict]:
+    """Stream a RAG answer token-by-token.
+
+    Yields a sequence of event dicts:
+      {"type": "token", "text": ...}   — one per streamed text delta
+      {"type": "done", ...}            — final event with sources + metadata
+
+    The retrieval step is identical to ``query`` (honoring search_mode/alpha
+    and the optional collection); only generation streams. Each answered
+    query is recorded to analytics, same as the non-streaming path.
+    """
+    start_time = time.time()
+
+    results = _retrieve(question, search_mode, alpha, collection)
+    relevant_results = [r for r in results if r.similarity_score >= SIMILARITY_THRESHOLD]
+
+    if not relevant_results:
+        elapsed = int((time.time() - start_time) * 1000)
+        fallback = "I couldn't find information about this in the uploaded documents."
+        analytics.log_query(question, RAGResponse(
+            answer=fallback, sources=[], confidence="low",
+            chunks_searched=len(results), processing_time_ms=elapsed,
+        ))
+        yield {"type": "token", "text": fallback}
+        yield {
+            "type": "done",
+            "sources": [],
+            "confidence": "low",
+            "chunks_searched": len(results),
+            "processing_time_ms": elapsed,
+        }
+        return
+
+    prompt = _build_streaming_prompt(question, relevant_results, conversation_context)
+    client = _get_client()
+
+    with client.messages.stream(
+        model="claude-sonnet-4-6-20250514",
+        max_tokens=1024,
+        system=SYSTEM_PROMPT,
+        messages=[{"role": "user", "content": prompt}],
+    ) as stream:
+        for text in stream.text_stream:
+            yield {"type": "token", "text": text}
+
+    citations = [
+        SourceCitation(
+            document=r.source_document,
+            page=r.source_page,
+            chunk_text=r.text[:200],
+            relevance_score=r.similarity_score,
+        )
+        for r in relevant_results
+    ]
+    confidence = _determine_confidence(relevant_results)
+    elapsed = int((time.time() - start_time) * 1000)
+
+    analytics.log_query(question, RAGResponse(
+        answer="", sources=citations, confidence=confidence,
+        chunks_searched=len(results), processing_time_ms=elapsed,
+    ))
+
+    yield {
+        "type": "done",
+        "sources": [c.model_dump() for c in citations],
+        "confidence": confidence,
+        "chunks_searched": len(results),
+        "processing_time_ms": elapsed,
+    }

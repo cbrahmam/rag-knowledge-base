@@ -22,6 +22,9 @@ class ParsedDocument(BaseModel):
     pages: Optional[List[dict]] = None
 
 
+DEFAULT_COLLECTION = "General"
+
+
 class DocumentUploadResponse(BaseModel):
     filename: str
     file_type: str
@@ -29,6 +32,9 @@ class DocumentUploadResponse(BaseModel):
     total_characters: int
     status: str
     message: str
+    collection: str = DEFAULT_COLLECTION
+    chunk_size: Optional[int] = None
+    overlap: Optional[int] = None
 
 
 class DocumentListItem(BaseModel):
@@ -37,6 +43,13 @@ class DocumentListItem(BaseModel):
     total_chunks: int
     uploaded_at: str
     size_bytes: int
+    collection: str = DEFAULT_COLLECTION
+
+
+class CollectionInfo(BaseModel):
+    name: str
+    document_count: int
+    chunk_count: int
 
 
 class SearchResult(BaseModel):
@@ -65,7 +78,78 @@ class RAGResponse(BaseModel):
 class QueryRequest(BaseModel):
     question: str
     context: Optional[List[dict]] = None
+    search_mode: str = "hybrid"  # "hybrid" | "semantic" | "keyword"
+    alpha: float = 0.5  # hybrid blend weight: 1.0=semantic, 0.0=keyword
+    collection: Optional[str] = None  # scope retrieval to one collection
 
 
 class MultiQueryRequest(BaseModel):
     questions: List[str]
+
+
+class QueryRecord(BaseModel):
+    question: str
+    confidence: str
+    processing_time_ms: int
+    chunks_searched: int
+    source_count: int
+    timestamp: str
+
+
+class AnalyticsSummary(BaseModel):
+    total_queries: int
+    avg_processing_time_ms: int
+    avg_source_count: float
+    confidence_distribution: dict
+    recent: List[QueryRecord]
+
+
+class DocumentSummary(BaseModel):
+    filename: str
+    summary: str
+    key_points: List[str]
+    suggested_questions: List[str]
+    cached: bool = False
+
+
+class FeedbackRequest(BaseModel):
+    question: str
+    answer: str
+    rating: str  # "up" | "down"
+    confidence: Optional[str] = None
+    comment: Optional[str] = None
+
+
+class FeedbackSummary(BaseModel):
+    total: int
+    up: int
+    down: int
+    satisfaction_rate: float  # 0-100, share of rated answers that are positive
+
+
+class ConversationCreate(BaseModel):
+    title: Optional[str] = None
+    messages: List[dict]
+
+
+class SavedConversation(BaseModel):
+    id: str
+    title: str
+    messages: List[dict]
+    created_at: str
+    updated_at: str
+
+
+class ConversationListItem(BaseModel):
+    id: str
+    title: str
+    message_count: int
+    updated_at: str
+
+
+class DocumentContent(BaseModel):
+    filename: str
+    file_type: str
+    total_characters: int
+    total_pages: Optional[int] = None
+    content: str

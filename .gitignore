@@ -16,6 +16,9 @@ frontend/dist/
 backend/uploads/
 backend/chroma_data/
 backend/chunks_store.json
+backend/analytics_store.json
+backend/feedback_store.json
+backend/conversations_store.json
 
 # Environment
 .env
@@ -27,3 +30,7 @@ backend/chunks_store.json
 *.swp
 *.swo
 .DS_Store
+
+# Stray root-level npm files (deps live in frontend/)
+/package.json
+/package-lock.json

@@ -7,9 +7,16 @@ const SUGGESTED_QUESTIONS = [
   "Are there any deadlines or important dates mentioned?",
 ];
 
-export default function ChatInterface({ messages, isLoading, onSend, onClear, hasDocuments }) {
+const SEARCH_MODES = [
+  { id: 'hybrid', label: 'Hybrid', hint: 'Semantic + keyword (best overall)' },
+  { id: 'semantic', label: 'Semantic', hint: 'Meaning-based vector search' },
+  { id: 'keyword', label: 'Keyword', hint: 'Exact term BM25 search' },
+];
+
+export default function ChatInterface({ messages, isLoading, onSend, onClear, hasDocuments, activeCollection = null, onSave, onOpenSaved }) {
   const [input, setInput] = useState('');
   const [toast, setToast] = useState(null);
+  const [searchMode, setSearchMode] = useState('hybrid');
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -20,12 +27,12 @@ export default function ChatInterface({ messages, isLoading, onSend, onClear, ha
   function handleSubmit(e) {
     e.preventDefault();
     if (!input.trim() || isLoading || !hasDocuments) return;
-    onSend(input.trim());
+    onSend(input.trim(), searchMode);
     setInput('');
   }
 
   function handleSuggestion(question) {
-    onSend(question);
+    onSend(question, searchMode);
   }
 
   function showToast(msg) {
@@ -64,15 +71,53 @@ export default function ChatInterface({ messages, isLoading, onSend, onClear, ha
     navigator.clipboard.writeText(lines.join('\n\n')).then(() => showToast('Copied to clipboard'));
   }
 
+  async function saveChat() {
+    try {
+      await onSave?.();
+      showToast('Conversation saved');
+    } catch {
+      showToast('Failed to save');
+    }
+  }
+
   const showSuggestions = hasDocuments && messages.length === 0;
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden relative">
       <div className="flex items-center justify-between px-6 py-2 border-b border-border">
-        <h2 className="text-sm font-semibold text-text-primary">Chat</h2>
         <div className="flex items-center gap-3">
+          <h2 className="text-sm font-semibold text-text-primary">Chat</h2>
+          <div className="flex items-center rounded-lg border border-border p-0.5 bg-bg">
+            {SEARCH_MODES.map(mode => (
+              <button
+                key={mode.id}
+                onClick={() => setSearchMode(mode.id)}
+                title={mode.hint}
+                className={`text-[10px] px-2 py-0.5 rounded-md transition-colors ${
+                  searchMode === mode.id
+                    ? 'bg-accent text-white'
+                    : 'text-text-secondary hover:text-accent'
+                }`}
+              >
+                {mode.label}
+              </button>
+            ))}
+          </div>
+          {activeCollection && (
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-accent/10 text-accent">
+              scoped to {activeCollection}
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-3">
+          {onOpenSaved && (
+            <button onClick={onOpenSaved} className="text-xs text-text-secondary hover:text-accent transition-colors">Saved</button>
+          )}
           {messages.length > 0 && (
             <>
+              {onSave && (
+                <button onClick={saveChat} className="text-xs text-text-secondary hover:text-accent transition-colors">Save</button>
+              )}
               <button onClick={copyChat} className="text-xs text-text-secondary hover:text-accent transition-colors">Copy</button>
               <button onClick={exportChat} className="text-xs text-text-secondary hover:text-accent transition-colors">Export</button>
               <button onClick={onClear} className="text-xs text-text-secondary hover:text-danger transition-colors">Clear</button>
@@ -116,10 +161,10 @@ export default function ChatInterface({ messages, isLoading, onSend, onClear, ha
         )}
 
         {messages.map((msg, i) => (
-          <ChatMessage key={i} message={msg} />
+          <ChatMessage key={i} message={msg} question={i > 0 ? messages[i - 1].content : ''} />
         ))}
 
-        {isLoading && (
+        {isLoading && messages[messages.length - 1]?.role !== 'assistant' && (
           <div className="flex justify-start animate-fade-in">
             <div className="bg-surface border border-border rounded-2xl rounded-bl-md px-4 py-3">
               <div className="flex items-center gap-1">
