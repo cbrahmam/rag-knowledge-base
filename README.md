@@ -26,6 +26,7 @@ DocuMind creates a searchable AI knowledge base from your documents. Upload file
 - **Chat export** — Download conversations as Markdown or copy to clipboard
 - **Collections** — Organize documents into named collections and scope questions to one
 - **Query analytics** — Usage dashboard: query volume, average latency, confidence mix, recent history
+- **Saved conversations** — Save chat sessions and restore them later
 - **Sample documents** — Included sample docs for instant testing
 
 ## Tech Stack
@@ -92,6 +93,17 @@ gitignored) along with the question, answer and confidence.
 - `POST /api/feedback` — record a rating `{ question, answer, rating, confidence }`
 - `GET /api/feedback` — `{ total, up, down, satisfaction_rate }`
 - `DELETE /api/feedback` — clear feedback
+
+## Saved conversations
+
+Use **Save** in the chat header to store the current session, and **Saved** to browse, restore,
+or delete past sessions. Conversations are stored locally (`backend/conversations_store.json`,
+gitignored).
+
+- `POST /api/conversations` — save `{ messages, title? }` (title auto-derived from the first question)
+- `GET /api/conversations` — list (id, title, message count, updated_at)
+- `GET /api/conversations/{id}` — full conversation
+- `PUT /api/conversations/{id}` — update; `DELETE /api/conversations/{id}` — remove
 
 ## Getting Started
 

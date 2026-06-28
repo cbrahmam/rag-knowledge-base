@@ -18,6 +18,7 @@ backend/chroma_data/
 backend/chunks_store.json
 backend/analytics_store.json
 backend/feedback_store.json
+backend/conversations_store.json
 
 # Environment
 .env

@@ -123,3 +123,23 @@ class FeedbackSummary(BaseModel):
     up: int
     down: int
     satisfaction_rate: float  # 0-100, share of rated answers that are positive
+
+
+class ConversationCreate(BaseModel):
+    title: Optional[str] = None
+    messages: List[dict]
+
+
+class SavedConversation(BaseModel):
+    id: str
+    title: str
+    messages: List[dict]
+    created_at: str
+    updated_at: str
+
+
+class ConversationListItem(BaseModel):
+    id: str
+    title: str
+    message_count: int
+    updated_at: str

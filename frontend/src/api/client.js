@@ -123,3 +123,23 @@ export async function submitFeedback({ question, answer, rating, confidence }) {
 export async function getFeedbackSummary() {
   return request('/feedback');
 }
+
+export async function saveConversation(messages, title = null) {
+  return request('/conversations', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ messages, title }),
+  });
+}
+
+export async function listConversations() {
+  return request('/conversations');
+}
+
+export async function getConversation(id) {
+  return request(`/conversations/${encodeURIComponent(id)}`);
+}
+
+export async function deleteConversation(id) {
+  return request(`/conversations/${encodeURIComponent(id)}`, { method: 'DELETE' });
+}

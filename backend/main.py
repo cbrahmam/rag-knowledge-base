@@ -5,6 +5,7 @@ from routers.documents import router as documents_router
 from routers.query import router as query_router
 from routers.analytics import router as analytics_router
 from routers.feedback import router as feedback_router
+from routers.conversations import router as conversations_router
 
 app = FastAPI(title="DocuMind", description="AI-powered knowledge base with RAG")
 
@@ -20,6 +21,7 @@ app.include_router(documents_router)
 app.include_router(query_router)
 app.include_router(analytics_router)
 app.include_router(feedback_router)
+app.include_router(conversations_router)
 
 
 @app.get("/api/health")

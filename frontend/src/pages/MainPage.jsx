@@ -4,6 +4,7 @@ import Sidebar from '../components/Sidebar';
 import ChatInterface from '../components/ChatInterface';
 import AnalyticsPanel from '../components/AnalyticsPanel';
 import SummaryModal from '../components/SummaryModal';
+import ConversationsModal from '../components/ConversationsModal';
 import useChat from '../hooks/useChat';
 import {
   uploadDocument,
@@ -12,6 +13,7 @@ import {
   getStats,
   loadSampleDocs,
   listCollections,
+  saveConversation,
 } from '../api/client';
 
 export default function MainPage() {
@@ -21,7 +23,8 @@ export default function MainPage() {
   const [stats, setStats] = useState({ total_documents: 0, total_chunks: 0 });
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [summaryFor, setSummaryFor] = useState(null);
-  const { messages, isLoading, sendMessage, clearChat } = useChat();
+  const [showConversations, setShowConversations] = useState(false);
+  const { messages, isLoading, sendMessage, clearChat, loadMessages } = useChat();
 
   const refresh = useCallback(async () => {
     const [docs, st, cols] = await Promise.all([listDocuments(), getStats(), listCollections()]);
@@ -58,6 +61,11 @@ export default function MainPage() {
     await refresh();
   }
 
+  async function handleSaveConversation() {
+    if (messages.length === 0) return;
+    await saveConversation(messages);
+  }
+
   return (
     <Layout
       stats={stats}
@@ -83,6 +91,8 @@ export default function MainPage() {
         onClear={clearChat}
         hasDocuments={stats.total_chunks > 0}
         activeCollection={activeCollection}
+        onSave={handleSaveConversation}
+        onOpenSaved={() => setShowConversations(true)}
       />
       {showAnalytics && <AnalyticsPanel onClose={() => setShowAnalytics(false)} />}
       {summaryFor && (
@@ -90,6 +100,12 @@ export default function MainPage() {
           filename={summaryFor}
           onClose={() => setSummaryFor(null)}
           onAskQuestion={handleSend}
+        />
+      )}
+      {showConversations && (
+        <ConversationsModal
+          onClose={() => setShowConversations(false)}
+          onRestore={loadMessages}
         />
       )}
     </Layout>
