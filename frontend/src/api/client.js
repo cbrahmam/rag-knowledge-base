@@ -9,14 +9,19 @@ async function request(url, options = {}) {
   return response.json();
 }
 
-export async function uploadDocument(file) {
+export async function uploadDocument(file, collection = 'General') {
   const formData = new FormData();
   formData.append('file', file);
+  formData.append('collection', collection);
   return request('/documents/upload', { method: 'POST', body: formData });
 }
 
 export async function listDocuments() {
   return request('/documents');
+}
+
+export async function listCollections() {
+  return request('/documents/collections');
 }
 
 export async function deleteDocument(filename) {

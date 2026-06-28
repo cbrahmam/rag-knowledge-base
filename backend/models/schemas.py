@@ -22,6 +22,9 @@ class ParsedDocument(BaseModel):
     pages: Optional[List[dict]] = None
 
 
+DEFAULT_COLLECTION = "General"
+
+
 class DocumentUploadResponse(BaseModel):
     filename: str
     file_type: str
@@ -29,6 +32,7 @@ class DocumentUploadResponse(BaseModel):
     total_characters: int
     status: str
     message: str
+    collection: str = DEFAULT_COLLECTION
 
 
 class DocumentListItem(BaseModel):
@@ -37,6 +41,13 @@ class DocumentListItem(BaseModel):
     total_chunks: int
     uploaded_at: str
     size_bytes: int
+    collection: str = DEFAULT_COLLECTION
+
+
+class CollectionInfo(BaseModel):
+    name: str
+    document_count: int
+    chunk_count: int
 
 
 class SearchResult(BaseModel):
@@ -67,6 +78,7 @@ class QueryRequest(BaseModel):
     context: Optional[List[dict]] = None
     search_mode: str = "hybrid"  # "hybrid" | "semantic" | "keyword"
     alpha: float = 0.5  # hybrid blend weight: 1.0=semantic, 0.0=keyword
+    collection: Optional[str] = None  # scope retrieval to one collection
 
 
 class MultiQueryRequest(BaseModel):

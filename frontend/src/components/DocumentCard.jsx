@@ -37,7 +37,14 @@ export default function DocumentCard({ doc, onDelete }) {
       </span>
 
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium truncate">{doc.filename}</p>
+        <div className="flex items-center gap-1.5">
+          <p className="text-sm font-medium truncate">{doc.filename}</p>
+          {doc.collection && (
+            <span className="shrink-0 text-[9px] px-1.5 py-0.5 rounded-full bg-accent/10 text-accent">
+              {doc.collection}
+            </span>
+          )}
+        </div>
         <p className="text-xs text-text-secondary">
           {doc.total_chunks} chunks &middot; {formatBytes(doc.size_bytes)} &middot; {formatDate(doc.uploaded_at)}
         </p>

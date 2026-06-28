@@ -13,7 +13,7 @@ const SEARCH_MODES = [
   { id: 'keyword', label: 'Keyword', hint: 'Exact term BM25 search' },
 ];
 
-export default function ChatInterface({ messages, isLoading, onSend, onClear, hasDocuments }) {
+export default function ChatInterface({ messages, isLoading, onSend, onClear, hasDocuments, activeCollection = null }) {
   const [input, setInput] = useState('');
   const [toast, setToast] = useState(null);
   const [searchMode, setSearchMode] = useState('hybrid');
@@ -94,6 +94,11 @@ export default function ChatInterface({ messages, isLoading, onSend, onClear, ha
               </button>
             ))}
           </div>
+          {activeCollection && (
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-accent/10 text-accent">
+              scoped to {activeCollection}
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-3">
           {messages.length > 0 && (

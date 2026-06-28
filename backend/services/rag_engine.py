@@ -13,15 +13,20 @@ from services.embeddings import generate_embeddings
 from services.vector_store import search, keyword_search, hybrid_search
 
 
-def _retrieve(question: str, search_mode: str, alpha: float) -> List[SearchResult]:
-    """Dispatch retrieval to the selected strategy."""
+def _retrieve(
+    question: str,
+    search_mode: str,
+    alpha: float,
+    collection: Optional[str] = None,
+) -> List[SearchResult]:
+    """Dispatch retrieval to the selected strategy, optionally scoped to a collection."""
     if search_mode == "keyword":
-        return keyword_search(question, n_results=5)
+        return keyword_search(question, n_results=5, collection_name=collection)
 
     query_embedding = generate_embeddings([question])[0]
     if search_mode == "semantic":
-        return search(query_embedding, n_results=5)
-    return hybrid_search(question, query_embedding, n_results=5, alpha=alpha)
+        return search(query_embedding, n_results=5, collection_name=collection)
+    return hybrid_search(question, query_embedding, n_results=5, alpha=alpha, collection_name=collection)
 
 logger = logging.getLogger(__name__)
 
@@ -132,10 +137,11 @@ def query(
     conversation_context: Optional[List[dict]] = None,
     search_mode: str = "hybrid",
     alpha: float = 0.5,
+    collection: Optional[str] = None,
 ) -> RAGResponse:
     start_time = time.time()
 
-    results = _retrieve(question, search_mode, alpha)
+    results = _retrieve(question, search_mode, alpha, collection)
 
     relevant_results = [r for r in results if r.similarity_score >= SIMILARITY_THRESHOLD]
 
@@ -194,6 +200,7 @@ def query_stream(
     conversation_context: Optional[List[dict]] = None,
     search_mode: str = "hybrid",
     alpha: float = 0.5,
+    collection: Optional[str] = None,
 ) -> Iterator[dict]:
     """Stream a RAG answer token-by-token.
 
@@ -201,12 +208,12 @@ def query_stream(
       {"type": "token", "text": ...}   — one per streamed text delta
       {"type": "done", ...}            — final event with sources + metadata
 
-    The retrieval step is identical to ``query`` (honoring search_mode/alpha);
-    only generation streams.
+    The retrieval step is identical to ``query`` (honoring search_mode/alpha
+    and the optional collection); only generation streams.
     """
     start_time = time.time()
 
-    results = _retrieve(question, search_mode, alpha)
+    results = _retrieve(question, search_mode, alpha, collection)
     relevant_results = [r for r in results if r.similarity_score >= SIMILARITY_THRESHOLD]
 
     if not relevant_results:

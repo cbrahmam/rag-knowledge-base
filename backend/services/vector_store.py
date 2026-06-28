@@ -8,7 +8,7 @@ from typing import List, Optional
 import chromadb
 from rank_bm25 import BM25Okapi
 
-from models.schemas import Chunk, SearchResult
+from models.schemas import Chunk, SearchResult, DEFAULT_COLLECTION
 
 _TOKEN_RE = re.compile(r"[a-z0-9]+")
 
@@ -38,7 +38,11 @@ def _get_collection() -> chromadb.Collection:
     return _collection
 
 
-def add_document(chunks: List[Chunk], embeddings: List[List[float]]) -> None:
+def add_document(
+    chunks: List[Chunk],
+    embeddings: List[List[float]],
+    collection_name: str = DEFAULT_COLLECTION,
+) -> None:
     collection = _get_collection()
     ids = [f"{chunks[0].source_document}_{c.chunk_index}" for c in chunks]
     documents = [c.text for c in chunks]
@@ -49,6 +53,7 @@ def add_document(chunks: List[Chunk], embeddings: List[List[float]]) -> None:
             "source_page": c.source_page if c.source_page is not None else -1,
             "start_char": c.start_char,
             "end_char": c.end_char,
+            "collection": collection_name,
         }
         for c in chunks
     ]
@@ -62,16 +67,22 @@ def add_document(chunks: List[Chunk], embeddings: List[List[float]]) -> None:
     logger.info("Added %d chunks for '%s' to vector store", len(chunks), chunks[0].source_document)
 
 
-def search(query_embedding: List[float], n_results: int = 5) -> List[SearchResult]:
+def search(
+    query_embedding: List[float],
+    n_results: int = 5,
+    collection_name: Optional[str] = None,
+) -> List[SearchResult]:
     collection = _get_collection()
 
     if collection.count() == 0:
         return []
 
+    where = {"collection": collection_name} if collection_name else None
     results = collection.query(
         query_embeddings=[query_embedding],
         n_results=min(n_results, collection.count()),
         include=["documents", "metadatas", "distances"],
+        where=where,
     )
 
     search_results = []
@@ -91,20 +102,28 @@ def search(query_embedding: List[float], n_results: int = 5) -> List[SearchResul
     return search_results
 
 
-def keyword_search(query_text: str, n_results: int = 5) -> List[SearchResult]:
+def keyword_search(
+    query_text: str,
+    n_results: int = 5,
+    collection_name: Optional[str] = None,
+) -> List[SearchResult]:
     """Lexical BM25 search over all chunk texts.
 
     Complements semantic search by catching exact term matches (names, codes,
     acronyms) that embeddings can blur together. Scores are normalized to
     [0, 1] by the top hit so they're comparable with cosine similarity.
+    Optionally scoped to a single collection.
     """
     collection = _get_collection()
     if collection.count() == 0:
         return []
 
-    data = collection.get(include=["documents", "metadatas"])
+    where = {"collection": collection_name} if collection_name else None
+    data = collection.get(include=["documents", "metadatas"], where=where)
     docs = data["documents"]
     metas = data["metadatas"]
+    if not docs:
+        return []
 
     bm25 = BM25Okapi([_tokenize(d) for d in docs])
     scores = bm25.get_scores(_tokenize(query_text))
@@ -131,22 +150,27 @@ def hybrid_search(
     query_embedding: List[float],
     n_results: int = 5,
     alpha: float = 0.5,
+    collection_name: Optional[str] = None,
 ) -> List[SearchResult]:
     """Blend semantic (cosine) and lexical (BM25) relevance.
 
     ``alpha`` weights the semantic side: 1.0 == pure vector search, 0.0 ==
     pure keyword search, 0.5 == balanced. Each signal is normalized to
-    [0, 1] before mixing so neither dominates by scale.
+    [0, 1] before mixing so neither dominates by scale. Optionally scoped to
+    a single collection.
     """
     collection = _get_collection()
     count = collection.count()
     if count == 0:
         return []
 
-    data = collection.get(include=["documents", "metadatas"])
+    where = {"collection": collection_name} if collection_name else None
+    data = collection.get(include=["documents", "metadatas"], where=where)
     ids = data["ids"]
     docs = data["documents"]
     metas = data["metadatas"]
+    if not docs:
+        return []
 
     bm25 = BM25Okapi([_tokenize(d) for d in docs])
     bm25_scores = bm25.get_scores(_tokenize(query_text))
@@ -156,6 +180,7 @@ def hybrid_search(
         query_embeddings=[query_embedding],
         n_results=count,
         include=["distances"],
+        where=where,
     )
     sem_by_id = {sid: 1 - dist for sid, dist in zip(sem["ids"][0], sem["distances"][0])}
 
@@ -189,6 +214,34 @@ def delete_document(filename: str) -> int:
         logger.info("Deleted %d chunks for '%s' from vector store", len(existing["ids"]), filename)
         return len(existing["ids"])
     return 0
+
+
+def list_collections() -> List[dict]:
+    """Group indexed chunks by collection, with document and chunk counts.
+
+    Chunks indexed before collections existed have no 'collection' metadata;
+    they're reported under the default collection name.
+    """
+    collection = _get_collection()
+    if collection.count() == 0:
+        return []
+
+    results = collection.get(include=["metadatas"])
+    by_collection: dict[str, dict] = {}
+    for meta in results["metadatas"]:
+        name = meta.get("collection", DEFAULT_COLLECTION)
+        entry = by_collection.setdefault(name, {"documents": set(), "chunk_count": 0})
+        entry["documents"].add(meta["source_document"])
+        entry["chunk_count"] += 1
+
+    return [
+        {
+            "name": name,
+            "document_count": len(entry["documents"]),
+            "chunk_count": entry["chunk_count"],
+        }
+        for name, entry in sorted(by_collection.items())
+    ]
 
 
 def get_stats() -> dict:
