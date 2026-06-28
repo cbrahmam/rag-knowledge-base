@@ -11,6 +11,7 @@ export default function Sidebar({
   onUpload,
   onDelete,
   onLoadSamples,
+  onSummarize,
 }) {
   const [search, setSearch] = useState('');
   const [loadingSamples, setLoadingSamples] = useState(false);
@@ -77,7 +78,7 @@ export default function Sidebar({
 
       <div className="border-t border-border" />
 
-      <DocumentList documents={filtered} onDelete={onDelete} />
+      <DocumentList documents={filtered} onDelete={onDelete} onSummarize={onSummarize} />
 
       {search && filtered.length === 0 && (
         <div className="px-3 pb-3">

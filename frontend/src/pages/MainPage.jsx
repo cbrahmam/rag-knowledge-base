@@ -3,6 +3,7 @@ import Layout from '../components/Layout';
 import Sidebar from '../components/Sidebar';
 import ChatInterface from '../components/ChatInterface';
 import AnalyticsPanel from '../components/AnalyticsPanel';
+import SummaryModal from '../components/SummaryModal';
 import useChat from '../hooks/useChat';
 import {
   uploadDocument,
@@ -19,6 +20,7 @@ export default function MainPage() {
   const [activeCollection, setActiveCollection] = useState(null); // null = All
   const [stats, setStats] = useState({ total_documents: 0, total_chunks: 0 });
   const [showAnalytics, setShowAnalytics] = useState(false);
+  const [summaryFor, setSummaryFor] = useState(null);
   const { messages, isLoading, sendMessage, clearChat } = useChat();
 
   const refresh = useCallback(async () => {
@@ -70,6 +72,7 @@ export default function MainPage() {
           onUpload={handleUpload}
           onDelete={handleDelete}
           onLoadSamples={handleLoadSamples}
+          onSummarize={setSummaryFor}
         />
       }
     >
@@ -82,6 +85,13 @@ export default function MainPage() {
         activeCollection={activeCollection}
       />
       {showAnalytics && <AnalyticsPanel onClose={() => setShowAnalytics(false)} />}
+      {summaryFor && (
+        <SummaryModal
+          filename={summaryFor}
+          onClose={() => setSummaryFor(null)}
+          onAskQuestion={handleSend}
+        />
+      )}
     </Layout>
   );
 }

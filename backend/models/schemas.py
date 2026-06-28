@@ -100,3 +100,11 @@ class AnalyticsSummary(BaseModel):
     avg_source_count: float
     confidence_distribution: dict
     recent: List[QueryRecord]
+
+
+class DocumentSummary(BaseModel):
+    filename: str
+    summary: str
+    key_points: List[str]
+    suggested_questions: List[str]
+    cached: bool = False

@@ -105,3 +105,9 @@ export async function askQuestionStream(question, context, { searchMode = 'hybri
     onError(err);
   }
 }
+
+export async function summarizeDocument(filename, refresh = false) {
+  return request(`/documents/${encodeURIComponent(filename)}/summarize?refresh=${refresh}`, {
+    method: 'POST',
+  });
+}

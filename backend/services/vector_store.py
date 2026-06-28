@@ -244,6 +244,23 @@ def list_collections() -> List[dict]:
     ]
 
 
+def get_document_chunks(filename: str) -> List[str]:
+    """Return a document's chunk texts in chunk order."""
+    collection = _get_collection()
+    existing = collection.get(
+        where={"source_document": filename},
+        include=["documents", "metadatas"],
+    )
+    if not existing["ids"]:
+        return []
+
+    paired = sorted(
+        zip(existing["documents"], existing["metadatas"]),
+        key=lambda p: p[1].get("chunk_index", 0),
+    )
+    return [doc for doc, _ in paired]
+
+
 def get_stats() -> dict:
     collection = _get_collection()
     total_chunks = collection.count()

@@ -19,6 +19,7 @@ DocuMind creates a searchable AI knowledge base from your documents. Upload file
 - **Streaming answers** — Responses stream token-by-token over Server-Sent Events for instant feedback
 - **Hybrid search** — Blend semantic (vector) and keyword (BM25) retrieval, switchable per query
 - **Source citations** — Every answer includes the exact documents and pages it came from
+- **Document summaries** — One-click AI summary, key points, and suggested questions per document
 - **Confidence scoring** — Know how reliable each answer is (high/medium/low)
 - **Conversation context** — Follow-up questions understand the conversation history
 - **Chat export** — Download conversations as Markdown or copy to clipboard
@@ -72,6 +73,15 @@ time, average sources per answer, the confidence distribution, and recent questi
 - `GET /api/analytics` — summary (volume, latency, confidence distribution, recent)
 - `GET /api/analytics/history?limit=N` — recent query records
 - `DELETE /api/analytics/history` — clear the log
+
+## Document summaries
+
+Click **Summary** on any document (hover the card) to get an AI-generated overview, key points,
+and suggested questions. Clicking a suggested question drops it straight into the chat. Summaries
+are cached after the first generation.
+
+- `POST /api/documents/{filename}/summarize` — returns `{ summary, key_points, suggested_questions, cached }`
+- `POST /api/documents/{filename}/summarize?refresh=true` — regenerate, bypassing the cache
 
 ## Getting Started
 

@@ -12,6 +12,7 @@ from models.schemas import (
     DocumentUploadResponse,
     DocumentListItem,
     CollectionInfo,
+    DocumentSummary,
     DEFAULT_COLLECTION,
 )
 from services.doc_parser import parse_document, SUPPORTED_TYPES
@@ -22,7 +23,9 @@ from services.vector_store import (
     delete_document as vs_delete,
     get_stats,
     list_collections,
+    get_document_chunks,
 )
+from services.summarizer import summarize_document
 
 router = APIRouter(prefix="/api/documents", tags=["documents"])
 
@@ -152,6 +155,32 @@ async def delete_document(filename: str):
 @router.get("/stats")
 async def document_stats():
     return get_stats()
+
+
+@router.post("/{filename}/summarize", response_model=DocumentSummary)
+async def summarize(filename: str, refresh: bool = False):
+    store = _load_store()
+    if filename not in store:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    cached = store[filename].get("summary")
+    if cached and not refresh:
+        return DocumentSummary(**cached, cached=True)
+
+    chunks = get_document_chunks(filename)
+    if not chunks:
+        raise HTTPException(status_code=400, detail="Document has no indexed content")
+
+    try:
+        summary = summarize_document(filename, chunks)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to summarize: {str(e)}")
+
+    store[filename]["summary"] = summary.model_dump(exclude={"cached"})
+    _save_store(store)
+    return summary
 
 
 @router.post("/load-samples")

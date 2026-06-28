@@ -1,6 +1,6 @@
 import DocumentCard from './DocumentCard';
 
-export default function DocumentList({ documents, onDelete }) {
+export default function DocumentList({ documents, onDelete, onSummarize }) {
   if (documents.length === 0) {
     return (
       <div className="flex-1 flex items-center justify-center p-6">
@@ -14,7 +14,7 @@ export default function DocumentList({ documents, onDelete }) {
   return (
     <div className="flex-1 overflow-y-auto p-1">
       {documents.map(doc => (
-        <DocumentCard key={doc.filename} doc={doc} onDelete={onDelete} />
+        <DocumentCard key={doc.filename} doc={doc} onDelete={onDelete} onSummarize={onSummarize} />
       ))}
     </div>
   );

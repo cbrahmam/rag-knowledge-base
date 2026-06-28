@@ -17,7 +17,7 @@ function formatDate(iso) {
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-export default function DocumentCard({ doc, onDelete }) {
+export default function DocumentCard({ doc, onDelete, onSummarize }) {
   const [confirming, setConfirming] = useState(false);
 
   function handleDelete() {
@@ -50,16 +50,27 @@ export default function DocumentCard({ doc, onDelete }) {
         </p>
       </div>
 
-      <button
-        onClick={handleDelete}
-        className={`opacity-0 group-hover:opacity-100 text-xs px-2 py-1 rounded transition-all ${
-          confirming
-            ? 'bg-danger text-white opacity-100'
-            : 'text-text-secondary hover:text-danger hover:bg-danger/10'
-        }`}
-      >
-        {confirming ? 'Confirm' : 'Delete'}
-      </button>
+      <div className="flex items-center gap-1">
+        {onSummarize && (
+          <button
+            onClick={() => onSummarize(doc.filename)}
+            title="AI summary"
+            className="opacity-0 group-hover:opacity-100 text-xs px-2 py-1 rounded transition-all text-text-secondary hover:text-accent hover:bg-accent/10"
+          >
+            Summary
+          </button>
+        )}
+        <button
+          onClick={handleDelete}
+          className={`opacity-0 group-hover:opacity-100 text-xs px-2 py-1 rounded transition-all ${
+            confirming
+              ? 'bg-danger text-white opacity-100'
+              : 'text-text-secondary hover:text-danger hover:bg-danger/10'
+          }`}
+        >
+          {confirming ? 'Confirm' : 'Delete'}
+        </button>
+      </div>
     </div>
   );
 }
