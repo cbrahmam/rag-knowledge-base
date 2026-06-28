@@ -7,7 +7,7 @@ const SUGGESTED_QUESTIONS = [
   "Are there any deadlines or important dates mentioned?",
 ];
 
-export default function ChatInterface({ messages, isLoading, onSend, onClear, hasDocuments }) {
+export default function ChatInterface({ messages, isLoading, onSend, onClear, hasDocuments, onSave, onOpenSaved }) {
   const [input, setInput] = useState('');
   const [toast, setToast] = useState(null);
   const messagesEndRef = useRef(null);
@@ -64,6 +64,15 @@ export default function ChatInterface({ messages, isLoading, onSend, onClear, ha
     navigator.clipboard.writeText(lines.join('\n\n')).then(() => showToast('Copied to clipboard'));
   }
 
+  async function saveChat() {
+    try {
+      await onSave?.();
+      showToast('Conversation saved');
+    } catch {
+      showToast('Failed to save');
+    }
+  }
+
   const showSuggestions = hasDocuments && messages.length === 0;
 
   return (
@@ -71,8 +80,14 @@ export default function ChatInterface({ messages, isLoading, onSend, onClear, ha
       <div className="flex items-center justify-between px-6 py-2 border-b border-border">
         <h2 className="text-sm font-semibold text-text-primary">Chat</h2>
         <div className="flex items-center gap-3">
+          {onOpenSaved && (
+            <button onClick={onOpenSaved} className="text-xs text-text-secondary hover:text-accent transition-colors">Saved</button>
+          )}
           {messages.length > 0 && (
             <>
+              {onSave && (
+                <button onClick={saveChat} className="text-xs text-text-secondary hover:text-accent transition-colors">Save</button>
+              )}
               <button onClick={copyChat} className="text-xs text-text-secondary hover:text-accent transition-colors">Copy</button>
               <button onClick={exportChat} className="text-xs text-text-secondary hover:text-accent transition-colors">Export</button>
               <button onClick={onClear} className="text-xs text-text-secondary hover:text-danger transition-colors">Clear</button>
