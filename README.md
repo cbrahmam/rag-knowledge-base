@@ -13,7 +13,7 @@ DocuMind creates a searchable AI knowledge base from your documents. Upload file
 ## Features
 
 - **Multi-format document upload** — PDF, DOCX, TXT, and Markdown files
-- **Automatic text chunking** — Smart splitting at sentence boundaries with configurable overlap
+- **Adaptive chunking** — Content-type-aware splitting (Markdown chunks per section); size/overlap auto-tuned per file type and overridable per upload
 - **Vector embeddings** — Local embeddings with sentence-transformers (no API costs)
 - **Natural language Q&A** — Ask questions and get accurate answers powered by Claude
 - **Source citations** — Every answer includes the exact documents and pages it came from
@@ -58,6 +58,13 @@ RAG (Retrieval-Augmented Generation) solves the problem of LLMs not knowing abou
 3. **Generation**: The most relevant chunks are sent as context to Claude, which generates an answer grounded in your actual documents
 
 This approach ensures answers are factual (grounded in your docs) and traceable (with source citations).
+
+## Adaptive chunking
+
+Chunk size and overlap are tuned per file type (Markdown 800/100, PDF & DOCX 600/80, TXT 500/50),
+and Markdown is split at heading boundaries so chunks respect sections. Override per upload via
+the **Advanced** section in the uploader, or the `chunk_size` / `overlap` form fields on
+`POST /api/documents/upload`.
 
 ## Getting Started
 
@@ -111,7 +118,6 @@ Click "Load Samples" in the sidebar to load the included sample documents, then 
 
 - **No OCR**: Scanned PDFs (image-only) won't extract text — only text-based PDFs are supported
 - **Single collection**: All documents go into one knowledge base (no multi-tenant support)
-- **Chunk size**: Fixed at 500 characters — could benefit from adaptive chunking based on content type
 - **No streaming**: Answers appear all at once rather than streaming token-by-token
 - **Local only**: ChromaDB and embeddings run locally — would need a hosted vector DB for production scale
 - **No authentication**: No user auth — intended for local/internal use
