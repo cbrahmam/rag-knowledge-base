@@ -51,5 +51,10 @@ export default function useChat() {
     setMessages([]);
   }, []);
 
-  return { messages, isLoading, sendMessage, clearChat };
+  // Replace the current chat with a previously saved message list.
+  const loadMessages = useCallback((restored) => {
+    setMessages(Array.isArray(restored) ? restored : []);
+  }, []);
+
+  return { messages, isLoading, sendMessage, clearChat, loadMessages };
 }
