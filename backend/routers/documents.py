@@ -25,6 +25,7 @@ from services.vector_store import (
     get_stats,
     list_collections,
     get_document_chunks,
+    set_document_collection,
 )
 from services.summarizer import summarize_document
 
@@ -145,6 +146,19 @@ async def list_documents():
 @router.get("/collections", response_model=List[CollectionInfo])
 async def get_collections():
     return list_collections()
+
+
+@router.patch("/{filename}/collection")
+async def move_document(filename: str, collection: str = Form(...)):
+    collection = collection.strip() or DEFAULT_COLLECTION
+    store = _load_store()
+    if filename not in store:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    moved = set_document_collection(filename, collection)
+    store[filename]["collection"] = collection
+    _save_store(store)
+    return {"filename": filename, "collection": collection, "chunks_moved": moved}
 
 
 @router.delete("/{filename}")

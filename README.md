@@ -206,3 +206,5 @@ data: {"type": "done", "sources": [...], "confidence": "high", ...}
 Documents can be grouped into named collections. Upload accepts a `collection` form field
 (default `General`); `POST /api/query` accepts an optional `collection` to scope retrieval;
 `GET /api/documents/collections` lists collections with document and chunk counts.
+Move a document between collections with `PATCH /api/documents/{filename}/collection` (form field
+`collection`), or the hover **Move…** control on a document card.

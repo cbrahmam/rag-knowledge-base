@@ -216,6 +216,24 @@ def delete_document(filename: str) -> int:
     return 0
 
 
+def set_document_collection(filename: str, new_collection: str) -> int:
+    """Reassign all of a document's chunks to a different collection."""
+    collection = _get_collection()
+    existing = collection.get(where={"source_document": filename}, include=["metadatas"])
+    if not existing["ids"]:
+        return 0
+
+    updated = []
+    for meta in existing["metadatas"]:
+        meta = dict(meta)
+        meta["collection"] = new_collection
+        updated.append(meta)
+
+    collection.update(ids=existing["ids"], metadatas=updated)
+    logger.info("Moved %d chunks for '%s' to collection '%s'", len(existing["ids"]), filename, new_collection)
+    return len(existing["ids"])
+
+
 def list_collections() -> List[dict]:
     """Group indexed chunks by collection, with document and chunk counts.
 

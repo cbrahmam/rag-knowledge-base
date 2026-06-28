@@ -15,6 +15,7 @@ import {
   loadSampleDocs,
   listCollections,
   saveConversation,
+  moveDocument,
 } from '../api/client';
 
 export default function MainPage() {
@@ -59,6 +60,11 @@ export default function MainPage() {
     await refresh();
   }
 
+  async function handleMove(filename, collection) {
+    await moveDocument(filename, collection);
+    await refresh();
+  }
+
   async function handleLoadSamples() {
     await loadSampleDocs();
     await refresh();
@@ -85,6 +91,7 @@ export default function MainPage() {
           onLoadSamples={handleLoadSamples}
           onSummarize={setSummaryFor}
           onPreview={setPreviewFor}
+          onMove={handleMove}
         />
       }
     >
