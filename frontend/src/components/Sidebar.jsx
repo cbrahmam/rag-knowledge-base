@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import FileUpload from './FileUpload';
 import DocumentList from './DocumentList';
+import { exportKnowledgeBase } from '../api/client';
 
 export default function Sidebar({
   documents,
@@ -17,7 +18,24 @@ export default function Sidebar({
 }) {
   const [search, setSearch] = useState('');
   const [loadingSamples, setLoadingSamples] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const collectionNames = collections.map(c => c.name);
+
+  async function handleExport() {
+    setExporting(true);
+    try {
+      const data = await exportKnowledgeBase();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `documind-kb-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setExporting(false);
+    }
+  }
 
   const filtered = search
     ? documents.filter(d => d.filename.toLowerCase().includes(search.toLowerCase()))
@@ -88,13 +106,22 @@ export default function Sidebar({
         </div>
       )}
 
-      <div className="border-t border-border p-3">
+      <div className="border-t border-border p-3 space-y-2">
         <div className="flex items-center justify-between text-xs text-text-secondary">
           <span>{stats.total_documents} docs &middot; {stats.total_chunks} chunks</span>
           <span className={stats.total_chunks > 0 ? 'text-success' : 'text-warning'}>
             {stats.total_chunks > 0 ? 'Ready' : 'Empty'}
           </span>
         </div>
+        {stats.total_documents > 0 && (
+          <button
+            onClick={handleExport}
+            disabled={exporting}
+            className="w-full text-[11px] py-1 rounded-lg border border-border text-text-secondary hover:border-accent hover:text-accent transition-colors disabled:opacity-50"
+          >
+            {exporting ? 'Exporting…' : 'Export knowledge base'}
+          </button>
+        )}
       </div>
     </aside>
   );
