@@ -31,7 +31,7 @@ export default function useChat() {
   }, []);
 
   const sendMessage = useCallback(async (question, options = {}) => {
-    const { searchMode = 'hybrid', collection = null } = options;
+    const { searchMode = 'hybrid', collection = null, nResults = 5 } = options;
     const context = getContext();
     setMessages(prev => [
       ...prev,
@@ -43,6 +43,7 @@ export default function useChat() {
     await askQuestionStream(question, context, {
       searchMode,
       collection,
+      nResults,
       onToken: (text) => patchLastMessage(m => ({ ...m, content: m.content + text })),
       onDone: (meta) => patchLastMessage({
         isStreaming: false,

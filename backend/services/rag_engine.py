@@ -14,20 +14,29 @@ from services.vector_store import search, keyword_search, hybrid_search
 from services import analytics
 
 
+DEFAULT_N_RESULTS = 5
+MAX_N_RESULTS = 20
+
+
 def _retrieve(
     question: str,
     search_mode: str,
     alpha: float,
     collection: Optional[str] = None,
+    n_results: int = DEFAULT_N_RESULTS,
 ) -> List[SearchResult]:
-    """Dispatch retrieval to the selected strategy, optionally scoped to a collection."""
+    """Dispatch retrieval to the selected strategy, optionally scoped to a collection.
+
+    ``n_results`` controls how many chunks are retrieved (clamped to a sane range).
+    """
+    n_results = max(1, min(n_results, MAX_N_RESULTS))
     if search_mode == "keyword":
-        return keyword_search(question, n_results=5, collection_name=collection)
+        return keyword_search(question, n_results=n_results, collection_name=collection)
 
     query_embedding = generate_embeddings([question])[0]
     if search_mode == "semantic":
-        return search(query_embedding, n_results=5, collection_name=collection)
-    return hybrid_search(question, query_embedding, n_results=5, alpha=alpha, collection_name=collection)
+        return search(query_embedding, n_results=n_results, collection_name=collection)
+    return hybrid_search(question, query_embedding, n_results=n_results, alpha=alpha, collection_name=collection)
 
 logger = logging.getLogger(__name__)
 
@@ -139,10 +148,11 @@ def query(
     search_mode: str = "hybrid",
     alpha: float = 0.5,
     collection: Optional[str] = None,
+    n_results: int = DEFAULT_N_RESULTS,
 ) -> RAGResponse:
     start_time = time.time()
 
-    results = _retrieve(question, search_mode, alpha, collection)
+    results = _retrieve(question, search_mode, alpha, collection, n_results)
 
     relevant_results = [r for r in results if r.similarity_score >= SIMILARITY_THRESHOLD]
 
@@ -206,6 +216,7 @@ def query_stream(
     search_mode: str = "hybrid",
     alpha: float = 0.5,
     collection: Optional[str] = None,
+    n_results: int = DEFAULT_N_RESULTS,
 ) -> Iterator[dict]:
     """Stream a RAG answer token-by-token.
 
@@ -219,7 +230,7 @@ def query_stream(
     """
     start_time = time.time()
 
-    results = _retrieve(question, search_mode, alpha, collection)
+    results = _retrieve(question, search_mode, alpha, collection, n_results)
     relevant_results = [r for r in results if r.similarity_score >= SIMILARITY_THRESHOLD]
 
     if not relevant_results:

@@ -17,6 +17,7 @@ export default function ChatInterface({ messages, isLoading, onSend, onClear, ha
   const [input, setInput] = useState('');
   const [toast, setToast] = useState(null);
   const [searchMode, setSearchMode] = useState('hybrid');
+  const [nResults, setNResults] = useState(5);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -27,12 +28,12 @@ export default function ChatInterface({ messages, isLoading, onSend, onClear, ha
   function handleSubmit(e) {
     e.preventDefault();
     if (!input.trim() || isLoading || !hasDocuments) return;
-    onSend(input.trim(), searchMode);
+    onSend(input.trim(), searchMode, nResults);
     setInput('');
   }
 
   function handleSuggestion(question) {
-    onSend(question, searchMode);
+    onSend(question, searchMode, nResults);
   }
 
   function showToast(msg) {
@@ -108,6 +109,16 @@ export default function ChatInterface({ messages, isLoading, onSend, onClear, ha
               scoped to {activeCollection}
             </span>
           )}
+          <select
+            value={nResults}
+            onChange={e => setNResults(Number(e.target.value))}
+            title="Number of source chunks to retrieve"
+            className="text-[10px] px-1.5 py-0.5 rounded-md border border-border bg-bg text-text-secondary outline-none focus:border-accent transition-colors"
+          >
+            {[3, 5, 8, 12].map(n => (
+              <option key={n} value={n}>{n} sources</option>
+            ))}
+          </select>
         </div>
         <div className="flex items-center gap-3">
           {onOpenSaved && (

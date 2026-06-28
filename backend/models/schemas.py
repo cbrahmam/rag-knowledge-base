@@ -81,6 +81,7 @@ class QueryRequest(BaseModel):
     search_mode: str = "hybrid"  # "hybrid" | "semantic" | "keyword"
     alpha: float = 0.5  # hybrid blend weight: 1.0=semantic, 0.0=keyword
     collection: Optional[str] = None  # scope retrieval to one collection
+    n_results: int = 5  # number of chunks to retrieve (1-20)
 
 
 class MultiQueryRequest(BaseModel):

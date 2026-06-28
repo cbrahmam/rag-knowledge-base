@@ -199,6 +199,8 @@ data: {"type": "done", "sources": [...], "confidence": "high", ...}
 - **keyword** — BM25 lexical ranking (exact terms, names, codes, acronyms)
 - **hybrid** — normalized blend of both, weighted by `alpha`
 
+`n_results` (1–20, default 5) controls how many chunks are retrieved per query, selectable from the chat header.
+
 ### Collections
 
 Documents can be grouped into named collections. Upload accepts a `collection` form field
