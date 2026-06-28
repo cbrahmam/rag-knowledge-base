@@ -13,7 +13,7 @@ const SEARCH_MODES = [
   { id: 'keyword', label: 'Keyword', hint: 'Exact term BM25 search' },
 ];
 
-export default function ChatInterface({ messages, isLoading, onSend, onClear, hasDocuments, activeCollection = null, onSave, onOpenSaved }) {
+export default function ChatInterface({ messages, isLoading, onSend, onClear, hasDocuments, activeCollection = null, onSave, onOpenSaved, onOpenBatch }) {
   const [input, setInput] = useState('');
   const [toast, setToast] = useState(null);
   const [searchMode, setSearchMode] = useState('hybrid');
@@ -121,6 +121,9 @@ export default function ChatInterface({ messages, isLoading, onSend, onClear, ha
           </select>
         </div>
         <div className="flex items-center gap-3">
+          {onOpenBatch && hasDocuments && (
+            <button onClick={onOpenBatch} className="text-xs text-text-secondary hover:text-accent transition-colors">Batch</button>
+          )}
           {onOpenSaved && (
             <button onClick={onOpenSaved} className="text-xs text-text-secondary hover:text-accent transition-colors">Saved</button>
           )}
