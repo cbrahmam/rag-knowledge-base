@@ -33,6 +33,20 @@ body {
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
+/* Tailwind's `prose` ships fixed light-mode grays, which are unreadable on
+   the dark surface. Re-point prose text/headings/code at the theme tokens so
+   rendered Markdown answers stay legible in dark mode. */
+:root[data-theme="dark"] .prose {
+  color: var(--color-text-primary);
+}
+:root[data-theme="dark"] .prose :where(p, li, h1, h2, h3, h4, h5, h6, strong, blockquote, th, td, a) {
+  color: var(--color-text-primary);
+}
+:root[data-theme="dark"] .prose :where(code) {
+  color: var(--color-text-primary);
+  background-color: var(--color-bg);
+}
+
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: translateY(0); }
