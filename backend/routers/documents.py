@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 from datetime import datetime, timezone
@@ -50,6 +51,14 @@ def _save_store(store: dict) -> None:
         json.dump(store, f, indent=2)
 
 
+def _find_duplicate(store: dict, content_hash: str, filename: str) -> Optional[str]:
+    """Return the name of an existing document with identical content, if any."""
+    for name, meta in store.items():
+        if name != filename and meta.get("content_hash") == content_hash:
+            return name
+    return None
+
+
 @router.post("/upload", response_model=DocumentUploadResponse)
 async def upload_document(
     file: UploadFile = File(...),
@@ -68,6 +77,14 @@ async def upload_document(
     content = await file.read()
     if len(content) > MAX_FILE_SIZE:
         raise HTTPException(status_code=400, detail="File size exceeds 10MB limit")
+
+    content_hash = hashlib.sha256(content).hexdigest()
+    duplicate = _find_duplicate(_load_store(), content_hash, file.filename)
+    if duplicate:
+        raise HTTPException(
+            status_code=409,
+            detail=f"This document is identical to an already-uploaded file: {duplicate}",
+        )
 
     file_path = UPLOAD_DIR / file.filename
     with open(file_path, "wb") as f:
@@ -102,6 +119,7 @@ async def upload_document(
             "collection": collection,
             "chunk_size": used_size,
             "overlap": used_overlap,
+            "content_hash": content_hash,
         }
         _save_store(store)
 
@@ -266,6 +284,7 @@ async def load_sample_documents():
                 "uploaded_at": datetime.now(timezone.utc).isoformat(),
                 "size_bytes": len(content),
                 "collection": "Samples",
+                "content_hash": hashlib.sha256(content).hexdigest(),
             }
             _save_store(store)
 

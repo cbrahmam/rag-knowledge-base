@@ -12,7 +12,7 @@ DocuMind creates a searchable AI knowledge base from your documents. Upload file
 
 ## Features
 
-- **Multi-format document upload** — PDF, DOCX, TXT, and Markdown files
+- **Multi-format document upload** — PDF, DOCX, TXT, and Markdown files (duplicate content is detected and rejected)
 - **Adaptive chunking** — Content-type-aware splitting (Markdown chunks per section); size/overlap auto-tuned per file type and overridable per upload
 - **Vector embeddings** — Local embeddings with sentence-transformers (no API costs)
 - **Natural language Q&A** — Ask questions and get accurate answers powered by Claude
