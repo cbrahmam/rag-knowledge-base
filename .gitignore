@@ -16,6 +16,7 @@ frontend/dist/
 backend/uploads/
 backend/chroma_data/
 backend/chunks_store.json
+backend/conversations_store.json
 
 # Environment
 .env
