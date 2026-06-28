@@ -21,6 +21,7 @@ DocuMind creates a searchable AI knowledge base from your documents. Upload file
 - **Source citations** — Every answer includes the exact documents and pages it came from
 - **Document summaries** — One-click AI summary, key points, and suggested questions per document
 - **Confidence scoring** — Know how reliable each answer is (high/medium/low)
+- **Answer feedback** — Rate answers 👍/👎; ratings feed a satisfaction-rate metric
 - **Conversation context** — Follow-up questions understand the conversation history
 - **Chat export** — Download conversations as Markdown or copy to clipboard
 - **Collections** — Organize documents into named collections and scope questions to one
@@ -82,6 +83,15 @@ are cached after the first generation.
 
 - `POST /api/documents/{filename}/summarize` — returns `{ summary, key_points, suggested_questions, cached }`
 - `POST /api/documents/{filename}/summarize?refresh=true` — regenerate, bypassing the cache
+
+## Answer feedback
+
+Each answer has 👍 / 👎 buttons. Ratings are stored locally (`backend/feedback_store.json`,
+gitignored) along with the question, answer and confidence.
+
+- `POST /api/feedback` — record a rating `{ question, answer, rating, confidence }`
+- `GET /api/feedback` — `{ total, up, down, satisfaction_rate }`
+- `DELETE /api/feedback` — clear feedback
 
 ## Getting Started
 

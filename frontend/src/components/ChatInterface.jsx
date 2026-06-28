@@ -146,7 +146,7 @@ export default function ChatInterface({ messages, isLoading, onSend, onClear, ha
         )}
 
         {messages.map((msg, i) => (
-          <ChatMessage key={i} message={msg} />
+          <ChatMessage key={i} message={msg} question={i > 0 ? messages[i - 1].content : ''} />
         ))}
 
         {isLoading && messages[messages.length - 1]?.role !== 'assistant' && (

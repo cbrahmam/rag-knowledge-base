@@ -108,3 +108,18 @@ class DocumentSummary(BaseModel):
     key_points: List[str]
     suggested_questions: List[str]
     cached: bool = False
+
+
+class FeedbackRequest(BaseModel):
+    question: str
+    answer: str
+    rating: str  # "up" | "down"
+    confidence: Optional[str] = None
+    comment: Optional[str] = None
+
+
+class FeedbackSummary(BaseModel):
+    total: int
+    up: int
+    down: int
+    satisfaction_rate: float  # 0-100, share of rated answers that are positive
