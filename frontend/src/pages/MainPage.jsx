@@ -18,8 +18,8 @@ export default function MainPage() {
 
   useEffect(() => { refresh(); }, [refresh]);
 
-  async function handleUpload(file) {
-    await uploadDocument(file);
+  async function handleUpload(file, options) {
+    await uploadDocument(file, options);
     await refresh();
   }
 
