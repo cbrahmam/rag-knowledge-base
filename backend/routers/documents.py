@@ -6,11 +6,13 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import List
 
-from fastapi import APIRouter, HTTPException, UploadFile, File
+from typing import Optional
+
+from fastapi import APIRouter, HTTPException, UploadFile, File, Form
 
 from models.schemas import DocumentUploadResponse, DocumentListItem
 from services.doc_parser import parse_document, SUPPORTED_TYPES
-from services.chunker import chunk_text
+from services.chunker import chunk_document, adaptive_params
 from services.embeddings import generate_embeddings
 from services.vector_store import add_document, delete_document as vs_delete, get_stats
 
@@ -36,7 +38,11 @@ def _save_store(store: dict) -> None:
 
 
 @router.post("/upload", response_model=DocumentUploadResponse)
-async def upload_document(file: UploadFile = File(...)):
+async def upload_document(
+    file: UploadFile = File(...),
+    chunk_size: Optional[int] = Form(None),
+    overlap: Optional[int] = Form(None),
+):
     ext = Path(file.filename).suffix.lower()
     if ext not in SUPPORTED_TYPES:
         raise HTTPException(
@@ -54,11 +60,18 @@ async def upload_document(file: UploadFile = File(...)):
 
     try:
         parsed = parse_document(str(file_path), file.filename)
-        chunks = chunk_text(
+        chunks = chunk_document(
             parsed.text_content,
             source_document=file.filename,
+            file_type=parsed.file_type,
             source_pages=parsed.pages,
+            chunk_size=chunk_size,
+            overlap=overlap,
         )
+
+        default_size, default_overlap = adaptive_params(parsed.file_type)
+        used_size = chunk_size or default_size
+        used_overlap = overlap if overlap is not None else default_overlap
 
         chunk_texts = [c.text for c in chunks]
         embeddings = generate_embeddings(chunk_texts)
@@ -71,6 +84,8 @@ async def upload_document(file: UploadFile = File(...)):
             "total_characters": parsed.total_characters,
             "uploaded_at": datetime.now(timezone.utc).isoformat(),
             "size_bytes": len(content),
+            "chunk_size": used_size,
+            "overlap": used_overlap,
         }
         _save_store(store)
 
@@ -81,6 +96,8 @@ async def upload_document(file: UploadFile = File(...)):
             total_characters=parsed.total_characters,
             status="processed",
             message=f"Successfully processed {file.filename} into {len(chunks)} chunks",
+            chunk_size=used_size,
+            overlap=used_overlap,
         )
 
     except ValueError as e:
@@ -149,9 +166,10 @@ async def load_sample_documents():
 
         try:
             parsed = parse_document(str(dest), file_path.name)
-            chunks = chunk_text(
+            chunks = chunk_document(
                 parsed.text_content,
                 source_document=file_path.name,
+                file_type=parsed.file_type,
                 source_pages=parsed.pages,
             )
             chunk_texts = [c.text for c in chunks]
