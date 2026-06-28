@@ -1,3 +1,5 @@
+import ThemeToggle from './ThemeToggle';
+
 export default function Header({ stats }) {
   return (
     <header className="h-14 border-b border-border bg-surface flex items-center justify-between px-6">
@@ -13,6 +15,7 @@ export default function Header({ stats }) {
         <span>{stats.total_documents} documents</span>
         <span className="text-border">|</span>
         <span>{stats.total_chunks} chunks indexed</span>
+        <ThemeToggle />
       </div>
     </header>
   );
