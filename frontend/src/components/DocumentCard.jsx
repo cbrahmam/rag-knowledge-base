@@ -17,7 +17,7 @@ function formatDate(iso) {
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-export default function DocumentCard({ doc, onDelete }) {
+export default function DocumentCard({ doc, onDelete, onPreview }) {
   const [confirming, setConfirming] = useState(false);
 
   function handleDelete() {
@@ -36,12 +36,19 @@ export default function DocumentCard({ doc, onDelete }) {
         {doc.file_type}
       </span>
 
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium truncate">{doc.filename}</p>
+      <button
+        onClick={() => onPreview?.(doc.filename)}
+        disabled={!onPreview}
+        title={onPreview ? 'Preview document' : undefined}
+        className="flex-1 min-w-0 text-left disabled:cursor-default"
+      >
+        <p className={`text-sm font-medium truncate ${onPreview ? 'group-hover:text-accent transition-colors' : ''}`}>
+          {doc.filename}
+        </p>
         <p className="text-xs text-text-secondary">
           {doc.total_chunks} chunks &middot; {formatBytes(doc.size_bytes)} &middot; {formatDate(doc.uploaded_at)}
         </p>
-      </div>
+      </button>
 
       <button
         onClick={handleDelete}
