@@ -143,3 +143,7 @@ export async function getConversation(id) {
 export async function deleteConversation(id) {
   return request(`/conversations/${encodeURIComponent(id)}`, { method: 'DELETE' });
 }
+
+export async function getDocumentContent(filename) {
+  return request(`/documents/${encodeURIComponent(filename)}/content`);
+}

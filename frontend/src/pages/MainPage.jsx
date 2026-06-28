@@ -5,6 +5,7 @@ import ChatInterface from '../components/ChatInterface';
 import AnalyticsPanel from '../components/AnalyticsPanel';
 import SummaryModal from '../components/SummaryModal';
 import ConversationsModal from '../components/ConversationsModal';
+import DocumentPreviewModal from '../components/DocumentPreviewModal';
 import useChat from '../hooks/useChat';
 import {
   uploadDocument,
@@ -24,6 +25,7 @@ export default function MainPage() {
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [summaryFor, setSummaryFor] = useState(null);
   const [showConversations, setShowConversations] = useState(false);
+  const [previewFor, setPreviewFor] = useState(null);
   const { messages, isLoading, sendMessage, clearChat, loadMessages } = useChat();
 
   const refresh = useCallback(async () => {
@@ -81,6 +83,7 @@ export default function MainPage() {
           onDelete={handleDelete}
           onLoadSamples={handleLoadSamples}
           onSummarize={setSummaryFor}
+          onPreview={setPreviewFor}
         />
       }
     >
@@ -107,6 +110,9 @@ export default function MainPage() {
           onClose={() => setShowConversations(false)}
           onRestore={loadMessages}
         />
+      )}
+      {previewFor && (
+        <DocumentPreviewModal filename={previewFor} onClose={() => setPreviewFor(null)} />
       )}
     </Layout>
   );

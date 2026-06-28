@@ -20,6 +20,7 @@ DocuMind creates a searchable AI knowledge base from your documents. Upload file
 - **Hybrid search** — Blend semantic (vector) and keyword (BM25) retrieval, switchable per query
 - **Source citations** — Every answer includes the exact documents and pages it came from
 - **Document summaries** — One-click AI summary, key points, and suggested questions per document
+- **Document preview** — Click a document to read its full parsed text in a modal
 - **Confidence scoring** — Know how reliable each answer is (high/medium/low)
 - **Answer feedback** — Rate answers 👍/👎; ratings feed a satisfaction-rate metric
 - **Conversation context** — Follow-up questions understand the conversation history
@@ -104,6 +105,13 @@ gitignored).
 - `GET /api/conversations` — list (id, title, message count, updated_at)
 - `GET /api/conversations/{id}` — full conversation
 - `PUT /api/conversations/{id}` — update; `DELETE /api/conversations/{id}` — remove
+
+## Document preview
+
+Click a document's name in the sidebar to read its full parsed text (with file type, character
+count and page count) in a modal.
+
+- `GET /api/documents/{filename}/content` — `{ filename, file_type, total_characters, total_pages, content }`
 
 ## Getting Started
 

@@ -143,3 +143,11 @@ class ConversationListItem(BaseModel):
     title: str
     message_count: int
     updated_at: str
+
+
+class DocumentContent(BaseModel):
+    filename: str
+    file_type: str
+    total_characters: int
+    total_pages: Optional[int] = None
+    content: str

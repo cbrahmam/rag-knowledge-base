@@ -17,7 +17,7 @@ function formatDate(iso) {
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-export default function DocumentCard({ doc, onDelete, onSummarize }) {
+export default function DocumentCard({ doc, onDelete, onSummarize, onPreview }) {
   const [confirming, setConfirming] = useState(false);
 
   function handleDelete() {
@@ -36,9 +36,16 @@ export default function DocumentCard({ doc, onDelete, onSummarize }) {
         {doc.file_type}
       </span>
 
-      <div className="flex-1 min-w-0">
+      <button
+        onClick={() => onPreview?.(doc.filename)}
+        disabled={!onPreview}
+        title={onPreview ? 'Preview document' : undefined}
+        className="flex-1 min-w-0 text-left disabled:cursor-default"
+      >
         <div className="flex items-center gap-1.5">
-          <p className="text-sm font-medium truncate">{doc.filename}</p>
+          <p className={`text-sm font-medium truncate ${onPreview ? 'group-hover:text-accent transition-colors' : ''}`}>
+            {doc.filename}
+          </p>
           {doc.collection && (
             <span className="shrink-0 text-[9px] px-1.5 py-0.5 rounded-full bg-accent/10 text-accent">
               {doc.collection}
@@ -48,7 +55,7 @@ export default function DocumentCard({ doc, onDelete, onSummarize }) {
         <p className="text-xs text-text-secondary">
           {doc.total_chunks} chunks &middot; {formatBytes(doc.size_bytes)} &middot; {formatDate(doc.uploaded_at)}
         </p>
-      </div>
+      </button>
 
       <div className="flex items-center gap-1">
         {onSummarize && (
