@@ -48,8 +48,8 @@ export default function MainPage() {
     ? documents.filter(d => d.collection === activeCollection)
     : documents;
 
-  async function handleUpload(file, collection) {
-    await uploadDocument(file, collection);
+  async function handleUpload(file, collection, options) {
+    await uploadDocument(file, collection, options);
     await refresh();
   }
 

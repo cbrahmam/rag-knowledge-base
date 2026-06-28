@@ -13,7 +13,7 @@ DocuMind creates a searchable AI knowledge base from your documents. Upload file
 ## Features
 
 - **Multi-format document upload** — PDF, DOCX, TXT, and Markdown files
-- **Automatic text chunking** — Smart splitting at sentence boundaries with configurable overlap
+- **Adaptive chunking** — Content-type-aware splitting (Markdown chunks per section); size/overlap auto-tuned per file type and overridable per upload
 - **Vector embeddings** — Local embeddings with sentence-transformers (no API costs)
 - **Natural language Q&A** — Ask questions and get accurate answers powered by Claude
 - **Streaming answers** — Responses stream token-by-token over Server-Sent Events for instant feedback
@@ -114,6 +114,13 @@ count and page count) in a modal.
 
 - `GET /api/documents/{filename}/content` — `{ filename, file_type, total_characters, total_pages, content }`
 
+## Adaptive chunking
+
+Chunk size and overlap are tuned per file type (Markdown 800/100, PDF & DOCX 600/80, TXT 500/50),
+and Markdown is split at heading boundaries so chunks respect sections. Override per upload via
+the **Advanced** section in the uploader, or the `chunk_size` / `overlap` form fields on
+`POST /api/documents/upload`.
+
 ## Getting Started
 
 ### Prerequisites
@@ -165,7 +172,6 @@ Click "Load Samples" in the sidebar to load the included sample documents, then 
 ## Limitations & Future Work
 
 - **No OCR**: Scanned PDFs (image-only) won't extract text — only text-based PDFs are supported
-- **Chunk size**: Fixed at 500 characters — could benefit from adaptive chunking based on content type
 - **Local only**: ChromaDB and embeddings run locally — would need a hosted vector DB for production scale
 - **No authentication**: No user auth — intended for local/internal use
 

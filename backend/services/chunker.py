@@ -7,6 +7,69 @@ from models.schemas import Chunk
 
 
 SENTENCE_BOUNDARY = re.compile(r"(?<=[.!?])\s+")
+MARKDOWN_HEADING = re.compile(r"^#{1,6}\s", re.MULTILINE)
+
+# Per-content-type chunking defaults. Denser, well-structured formats
+# (Markdown) tolerate larger chunks; flat prose stays smaller for tighter
+# retrieval. (chunk_size, overlap) in characters.
+ADAPTIVE_PARAMS = {
+    "md": (800, 100),
+    "pdf": (600, 80),
+    "docx": (600, 80),
+    "txt": (500, 50),
+}
+DEFAULT_PARAMS = (500, 50)
+
+
+def adaptive_params(file_type: str) -> tuple[int, int]:
+    """Return the (chunk_size, overlap) defaults for a file type."""
+    return ADAPTIVE_PARAMS.get(file_type, DEFAULT_PARAMS)
+
+
+def _split_markdown_sections(text: str) -> List[str]:
+    """Split Markdown at heading boundaries so chunks respect section structure."""
+    starts = [m.start() for m in MARKDOWN_HEADING.finditer(text)]
+    if not starts:
+        return [text]
+
+    sections: List[str] = []
+    if starts[0] > 0 and text[: starts[0]].strip():
+        sections.append(text[: starts[0]])
+    for i, start in enumerate(starts):
+        end = starts[i + 1] if i + 1 < len(starts) else len(text)
+        sections.append(text[start:end])
+    return sections
+
+
+def chunk_document(
+    text: str,
+    source_document: str,
+    file_type: str,
+    source_pages: Optional[List[dict]] = None,
+    chunk_size: Optional[int] = None,
+    overlap: Optional[int] = None,
+) -> List[Chunk]:
+    """Content-type-aware chunking.
+
+    Picks size/overlap defaults per file type (overridable), and for
+    Markdown chunks each heading-delimited section independently so chunks
+    don't straddle sections.
+    """
+    size, ov = adaptive_params(file_type)
+    if chunk_size:
+        size = chunk_size
+    if overlap is not None:
+        ov = overlap
+
+    if file_type == "md":
+        chunks: List[Chunk] = []
+        for section in _split_markdown_sections(text):
+            chunks.extend(chunk_text(section, source_document, size, ov, source_pages))
+        for idx, c in enumerate(chunks):
+            c.chunk_index = idx
+        return chunks
+
+    return chunk_text(text, source_document, size, ov, source_pages)
 
 
 def chunk_text(

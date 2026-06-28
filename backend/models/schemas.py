@@ -33,6 +33,8 @@ class DocumentUploadResponse(BaseModel):
     status: str
     message: str
     collection: str = DEFAULT_COLLECTION
+    chunk_size: Optional[int] = None
+    overlap: Optional[int] = None
 
 
 class DocumentListItem(BaseModel):
