@@ -23,7 +23,7 @@ async def ask_question(request: QueryRequest):
         )
 
     try:
-        return query(request.question, request.context, request.search_mode, request.alpha, request.collection)
+        return query(request.question, request.context, request.search_mode, request.alpha, request.collection, request.n_results)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
@@ -46,7 +46,7 @@ async def ask_question_stream(request: QueryRequest):
 
     def event_generator():
         try:
-            for event in query_stream(request.question, request.context, request.search_mode, request.alpha, request.collection):
+            for event in query_stream(request.question, request.context, request.search_mode, request.alpha, request.collection, request.n_results):
                 yield f"data: {json.dumps(event)}\n\n"
         except Exception as e:  # surface errors to the client as an SSE event
             yield f"data: {json.dumps({'type': 'error', 'detail': str(e)})}\n\n"
