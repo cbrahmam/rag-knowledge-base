@@ -16,6 +16,7 @@ DocuMind creates a searchable AI knowledge base from your documents. Upload file
 - **Automatic text chunking** — Smart splitting at sentence boundaries with configurable overlap
 - **Vector embeddings** — Local embeddings with sentence-transformers (no API costs)
 - **Natural language Q&A** — Ask questions and get accurate answers powered by Claude
+- **Streaming answers** — Responses stream token-by-token over Server-Sent Events for instant feedback
 - **Source citations** — Every answer includes the exact documents and pages it came from
 - **Confidence scoring** — Know how reliable each answer is (high/medium/low)
 - **Conversation context** — Follow-up questions understand the conversation history
@@ -112,8 +113,16 @@ Click "Load Samples" in the sidebar to load the included sample documents, then 
 - **No OCR**: Scanned PDFs (image-only) won't extract text — only text-based PDFs are supported
 - **Single collection**: All documents go into one knowledge base (no multi-tenant support)
 - **Chunk size**: Fixed at 500 characters — could benefit from adaptive chunking based on content type
-- **No streaming**: Answers appear all at once rather than streaming token-by-token
 - **Local only**: ChromaDB and embeddings run locally — would need a hosted vector DB for production scale
 - **No authentication**: No user auth — intended for local/internal use
 
-Future improvements could include: streaming responses, hybrid search (keyword + semantic), document versioning, multi-collection support, and role-based access control.
+Future improvements could include: hybrid search (keyword + semantic), document versioning, multi-collection support, and role-based access control.
+
+### API: streaming endpoint
+
+`POST /api/query/stream` returns a `text/event-stream`. Each frame is a JSON event:
+
+```
+data: {"type": "token", "text": "..."}      # one per streamed delta
+data: {"type": "done", "sources": [...], "confidence": "high", ...}
+```

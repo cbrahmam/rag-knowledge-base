@@ -56,6 +56,9 @@ export default function ChatMessage({ message }) {
             >
               {message.content}
             </ReactMarkdown>
+            {message.isStreaming && (
+              <span className="inline-block w-1.5 h-4 ml-0.5 align-middle bg-accent/70 rounded-sm animate-pulse" />
+            )}
           </div>
         </div>
 

@@ -38,3 +38,53 @@ export async function askQuestion(question, context = null) {
 export async function loadSampleDocs() {
   return request('/documents/load-samples', { method: 'POST' });
 }
+
+/**
+ * Stream an answer via Server-Sent Events.
+ *
+ * EventSource only supports GET, but we need to POST the question + context,
+ * so we read the fetch ReadableStream and parse SSE frames manually.
+ *
+ * @param {string} question
+ * @param {Array|null} context
+ * @param {{onToken: (text: string) => void, onDone: (meta: object) => void, onError: (err: Error) => void}} handlers
+ */
+export async function askQuestionStream(question, context, { onToken, onDone, onError }) {
+  try {
+    const response = await fetch(`${BASE_URL}/query/stream`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question, context }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: 'Request failed' }));
+      throw new Error(error.detail || `HTTP ${response.status}`);
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const frames = buffer.split('\n\n');
+      buffer = frames.pop() || '';
+
+      for (const frame of frames) {
+        const line = frame.split('\n').find(l => l.startsWith('data: '));
+        if (!line) continue;
+        const event = JSON.parse(line.slice(6));
+
+        if (event.type === 'token') onToken(event.text);
+        else if (event.type === 'done') onDone(event);
+        else if (event.type === 'error') throw new Error(event.detail || 'Streaming error');
+      }
+    }
+  } catch (err) {
+    onError(err);
+  }
+}

@@ -119,7 +119,7 @@ export default function ChatInterface({ messages, isLoading, onSend, onClear, ha
           <ChatMessage key={i} message={msg} />
         ))}
 
-        {isLoading && (
+        {isLoading && messages[messages.length - 1]?.role !== 'assistant' && (
           <div className="flex justify-start animate-fade-in">
             <div className="bg-surface border border-border rounded-2xl rounded-bl-md px-4 py-3">
               <div className="flex items-center gap-1">
