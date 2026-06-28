@@ -40,7 +40,8 @@ export default function MainPage() {
   // Scope each question to the active collection (null = search everything),
   // forwarding the search mode chosen in the chat header.
   const handleSend = useCallback(
-    (question, searchMode = 'hybrid') => sendMessage(question, { searchMode, collection: activeCollection }),
+    (question, searchMode = 'hybrid', nResults = 5) =>
+      sendMessage(question, { searchMode, collection: activeCollection, nResults }),
     [sendMessage, activeCollection],
   );
 
