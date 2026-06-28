@@ -38,3 +38,7 @@ export async function askQuestion(question, context = null) {
 export async function loadSampleDocs() {
   return request('/documents/load-samples', { method: 'POST' });
 }
+
+export async function getDocumentContent(filename) {
+  return request(`/documents/${encodeURIComponent(filename)}/content`);
+}
