@@ -69,3 +69,23 @@ class QueryRequest(BaseModel):
 
 class MultiQueryRequest(BaseModel):
     questions: List[str]
+
+
+class ConversationCreate(BaseModel):
+    title: Optional[str] = None
+    messages: List[dict]
+
+
+class SavedConversation(BaseModel):
+    id: str
+    title: str
+    messages: List[dict]
+    created_at: str
+    updated_at: str
+
+
+class ConversationListItem(BaseModel):
+    id: str
+    title: str
+    message_count: int
+    updated_at: str
