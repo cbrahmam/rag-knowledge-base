@@ -9,9 +9,11 @@ async function request(url, options = {}) {
   return response.json();
 }
 
-export async function uploadDocument(file) {
+export async function uploadDocument(file, { chunkSize, overlap } = {}) {
   const formData = new FormData();
   formData.append('file', file);
+  if (chunkSize != null) formData.append('chunk_size', chunkSize);
+  if (overlap != null) formData.append('overlap', overlap);
   return request('/documents/upload', { method: 'POST', body: formData });
 }
 
