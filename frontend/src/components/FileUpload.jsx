@@ -12,6 +12,9 @@ const ACCEPT_STRING = '.pdf,.docx,.txt,.md';
 export default function FileUpload({ onUpload }) {
   const [isDragging, setIsDragging] = useState(false);
   const [uploading, setUploading] = useState([]);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [chunkSize, setChunkSize] = useState('');
+  const [overlap, setOverlap] = useState('');
   const inputRef = useRef(null);
 
   function handleDragOver(e) {
@@ -34,9 +37,13 @@ export default function FileUpload({ onUpload }) {
 
     setUploading(validFiles.map(f => ({ name: f.name, status: 'uploading' })));
 
+    const options = {};
+    if (chunkSize) options.chunkSize = Number(chunkSize);
+    if (overlap) options.overlap = Number(overlap);
+
     for (let i = 0; i < validFiles.length; i++) {
       try {
-        await onUpload(validFiles[i]);
+        await onUpload(validFiles[i], options);
         setUploading(prev =>
           prev.map((item, idx) =>
             idx === i ? { ...item, status: 'done' } : item
@@ -99,6 +106,41 @@ export default function FileUpload({ onUpload }) {
         onChange={handleChange}
         className="hidden"
       />
+
+      <div className="mt-2">
+        <button
+          onClick={() => setShowAdvanced(s => !s)}
+          className="text-[10px] text-text-secondary hover:text-accent transition-colors"
+        >
+          {showAdvanced ? '▾ Advanced' : '▸ Advanced'}
+        </button>
+        {showAdvanced && (
+          <div className="mt-1.5 grid grid-cols-2 gap-2 animate-fade-in">
+            <label className="text-[10px] text-text-secondary">
+              Chunk size
+              <input
+                type="number"
+                min="100"
+                value={chunkSize}
+                onChange={e => setChunkSize(e.target.value)}
+                placeholder="auto"
+                className="w-full mt-0.5 text-xs px-2 py-1 border border-border rounded bg-bg outline-none focus:border-accent transition-colors"
+              />
+            </label>
+            <label className="text-[10px] text-text-secondary">
+              Overlap
+              <input
+                type="number"
+                min="0"
+                value={overlap}
+                onChange={e => setOverlap(e.target.value)}
+                placeholder="auto"
+                className="w-full mt-0.5 text-xs px-2 py-1 border border-border rounded bg-bg outline-none focus:border-accent transition-colors"
+              />
+            </label>
+          </div>
+        )}
+      </div>
 
       {uploading.length > 0 && (
         <div className="mt-2 space-y-1">
