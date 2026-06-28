@@ -20,6 +20,7 @@ DocuMind creates a searchable AI knowledge base from your documents. Upload file
 - **Confidence scoring** — Know how reliable each answer is (high/medium/low)
 - **Conversation context** — Follow-up questions understand the conversation history
 - **Chat export** — Download conversations as Markdown or copy to clipboard
+- **Dark mode** — Light/dark theme toggle, remembers your choice and respects OS preference
 - **Sample documents** — Included sample docs for instant testing
 
 ## Tech Stack
