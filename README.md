@@ -18,6 +18,7 @@ DocuMind creates a searchable AI knowledge base from your documents. Upload file
 - **Natural language Q&A** — Ask questions and get accurate answers powered by Claude
 - **Source citations** — Every answer includes the exact documents and pages it came from
 - **Confidence scoring** — Know how reliable each answer is (high/medium/low)
+- **Answer feedback** — Rate answers 👍/👎; ratings feed a satisfaction-rate metric
 - **Conversation context** — Follow-up questions understand the conversation history
 - **Chat export** — Download conversations as Markdown or copy to clipboard
 - **Sample documents** — Included sample docs for instant testing
@@ -58,6 +59,15 @@ RAG (Retrieval-Augmented Generation) solves the problem of LLMs not knowing abou
 3. **Generation**: The most relevant chunks are sent as context to Claude, which generates an answer grounded in your actual documents
 
 This approach ensures answers are factual (grounded in your docs) and traceable (with source citations).
+
+## Answer feedback
+
+Each answer has 👍 / 👎 buttons. Ratings are stored locally (`backend/feedback_store.json`,
+gitignored) along with the question, answer and confidence.
+
+- `POST /api/feedback` — record a rating `{ question, answer, rating, confidence }`
+- `GET /api/feedback` — `{ total, up, down, satisfaction_rate }`
+- `DELETE /api/feedback` — clear feedback
 
 ## Getting Started
 
