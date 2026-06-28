@@ -30,7 +30,8 @@ export default function useChat() {
     });
   }, []);
 
-  const sendMessage = useCallback(async (question) => {
+  const sendMessage = useCallback(async (question, options = {}) => {
+    const { searchMode = 'hybrid', collection = null } = options;
     const context = getContext();
     setMessages(prev => [
       ...prev,
@@ -40,6 +41,8 @@ export default function useChat() {
     setIsLoading(true);
 
     await askQuestionStream(question, context, {
+      searchMode,
+      collection,
       onToken: (text) => patchLastMessage(m => ({ ...m, content: m.content + text })),
       onDone: (meta) => patchLastMessage({
         isStreaming: false,
@@ -59,14 +62,14 @@ export default function useChat() {
   }, [getContext, patchLastMessage]);
 
   // Non-streaming fallback, kept for callers that want a single resolved answer.
-  const sendMessageSync = useCallback(async (question) => {
-    const userMsg = { role: 'user', content: question };
-    setMessages(prev => [...prev, userMsg]);
+  const sendMessageSync = useCallback(async (question, options = {}) => {
+    const { searchMode = 'hybrid', collection = null } = options;
+    setMessages(prev => [...prev, { role: 'user', content: question }]);
     setIsLoading(true);
 
     try {
       const context = getContext();
-      const response = await askQuestion(question, context);
+      const response = await askQuestion(question, context, searchMode, collection);
       setMessages(prev => [...prev, {
         role: 'assistant',
         content: response.answer,
@@ -90,5 +93,10 @@ export default function useChat() {
     setMessages([]);
   }, []);
 
-  return { messages, isLoading, sendMessage, sendMessageSync, clearChat };
+  // Replace the current chat with a previously saved message list.
+  const loadMessages = useCallback((restored) => {
+    setMessages(Array.isArray(restored) ? restored : []);
+  }, []);
+
+  return { messages, isLoading, sendMessage, sendMessageSync, clearChat, loadMessages };
 }

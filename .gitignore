@@ -27,3 +27,7 @@ backend/chunks_store.json
 *.swp
 *.swo
 .DS_Store
+
+# Stray root-level npm files (deps live in frontend/)
+/package.json
+/package-lock.json

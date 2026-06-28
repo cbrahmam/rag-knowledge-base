@@ -65,6 +65,8 @@ class RAGResponse(BaseModel):
 class QueryRequest(BaseModel):
     question: str
     context: Optional[List[dict]] = None
+    search_mode: str = "hybrid"  # "hybrid" | "semantic" | "keyword"
+    alpha: float = 0.5  # hybrid blend weight: 1.0=semantic, 0.0=keyword
 
 
 class MultiQueryRequest(BaseModel):

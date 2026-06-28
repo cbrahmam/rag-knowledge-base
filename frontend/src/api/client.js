@@ -27,11 +27,11 @@ export async function getStats() {
   return request('/documents/stats');
 }
 
-export async function askQuestion(question, context = null) {
+export async function askQuestion(question, context = null, searchMode = 'hybrid', collection = null) {
   return request('/query', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ question, context }),
+    body: JSON.stringify({ question, context, search_mode: searchMode, collection }),
   });
 }
 
@@ -47,14 +47,14 @@ export async function loadSampleDocs() {
  *
  * @param {string} question
  * @param {Array|null} context
- * @param {{onToken: (text: string) => void, onDone: (meta: object) => void, onError: (err: Error) => void}} handlers
+ * @param {{searchMode?: string, collection?: string|null, onToken: (text: string) => void, onDone: (meta: object) => void, onError: (err: Error) => void}} handlers
  */
-export async function askQuestionStream(question, context, { onToken, onDone, onError }) {
+export async function askQuestionStream(question, context, { searchMode = 'hybrid', collection = null, onToken, onDone, onError }) {
   try {
     const response = await fetch(`${BASE_URL}/query/stream`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ question, context }),
+      body: JSON.stringify({ question, context, search_mode: searchMode, collection }),
     });
 
     if (!response.ok) {

@@ -10,7 +10,18 @@ import anthropic
 
 from models.schemas import SearchResult, SourceCitation, RAGResponse
 from services.embeddings import generate_embeddings
-from services.vector_store import search
+from services.vector_store import search, keyword_search, hybrid_search
+
+
+def _retrieve(question: str, search_mode: str, alpha: float) -> List[SearchResult]:
+    """Dispatch retrieval to the selected strategy."""
+    if search_mode == "keyword":
+        return keyword_search(question, n_results=5)
+
+    query_embedding = generate_embeddings([question])[0]
+    if search_mode == "semantic":
+        return search(query_embedding, n_results=5)
+    return hybrid_search(question, query_embedding, n_results=5, alpha=alpha)
 
 logger = logging.getLogger(__name__)
 
@@ -119,11 +130,12 @@ def _determine_confidence(results: List[SearchResult]) -> str:
 def query(
     question: str,
     conversation_context: Optional[List[dict]] = None,
+    search_mode: str = "hybrid",
+    alpha: float = 0.5,
 ) -> RAGResponse:
     start_time = time.time()
 
-    query_embedding = generate_embeddings([question])[0]
-    results = search(query_embedding, n_results=5)
+    results = _retrieve(question, search_mode, alpha)
 
     relevant_results = [r for r in results if r.similarity_score >= SIMILARITY_THRESHOLD]
 
@@ -180,6 +192,8 @@ def query(
 def query_stream(
     question: str,
     conversation_context: Optional[List[dict]] = None,
+    search_mode: str = "hybrid",
+    alpha: float = 0.5,
 ) -> Iterator[dict]:
     """Stream a RAG answer token-by-token.
 
@@ -187,12 +201,12 @@ def query_stream(
       {"type": "token", "text": ...}   — one per streamed text delta
       {"type": "done", ...}            — final event with sources + metadata
 
-    The retrieval step is identical to ``query``; only generation streams.
+    The retrieval step is identical to ``query`` (honoring search_mode/alpha);
+    only generation streams.
     """
     start_time = time.time()
 
-    query_embedding = generate_embeddings([question])[0]
-    results = search(query_embedding, n_results=5)
+    results = _retrieve(question, search_mode, alpha)
     relevant_results = [r for r in results if r.similarity_score >= SIMILARITY_THRESHOLD]
 
     if not relevant_results:
