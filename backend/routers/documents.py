@@ -203,6 +203,37 @@ async def document_stats():
     return get_stats()
 
 
+@router.get("/export")
+async def export_knowledge_base():
+    """Export a JSON manifest of the knowledge base (document metadata + stats).
+
+    Excludes raw chunk text / embeddings — it's a portable inventory of what's
+    indexed, useful for backup or auditing.
+    """
+    store = _load_store()
+    documents = [
+        {
+            "filename": name,
+            "file_type": meta.get("file_type"),
+            "collection": meta.get("collection", DEFAULT_COLLECTION),
+            "total_chunks": meta.get("total_chunks"),
+            "total_characters": meta.get("total_characters"),
+            "size_bytes": meta.get("size_bytes"),
+            "uploaded_at": meta.get("uploaded_at"),
+            "chunk_size": meta.get("chunk_size"),
+            "overlap": meta.get("overlap"),
+            "content_hash": meta.get("content_hash"),
+        }
+        for name, meta in store.items()
+    ]
+    return {
+        "exported_at": datetime.now(timezone.utc).isoformat(),
+        "stats": get_stats(),
+        "collections": list_collections(),
+        "documents": documents,
+    }
+
+
 @router.post("/{filename}/summarize", response_model=DocumentSummary)
 async def summarize(filename: str, refresh: bool = False):
     store = _load_store()

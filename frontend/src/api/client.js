@@ -40,6 +40,10 @@ export async function getStats() {
   return request('/documents/stats');
 }
 
+export async function exportKnowledgeBase() {
+  return request('/documents/export');
+}
+
 export async function askQuestion(question, context = null, searchMode = 'hybrid', collection = null, nResults = 5) {
   return request('/query', {
     method: 'POST',
