@@ -28,6 +28,7 @@ DocuMind creates a searchable AI knowledge base from your documents. Upload file
 - **Collections** — Organize documents into named collections and scope questions to one
 - **Query analytics** — Usage dashboard: query volume, average latency, confidence mix, recent history
 - **Saved conversations** — Save chat sessions and restore them later
+- **Dark mode** — Light/dark theme toggle, remembers your choice and respects OS preference
 - **Sample documents** — Included sample docs for instant testing
 
 ## Tech Stack

@@ -1,3 +1,5 @@
+import ThemeToggle from './ThemeToggle';
+
 export default function Header({ stats, onOpenAnalytics }) {
   return (
     <header className="h-14 border-b border-border bg-surface flex items-center justify-between px-6">
@@ -25,6 +27,7 @@ export default function Header({ stats, onOpenAnalytics }) {
             Analytics
           </button>
         )}
+        <ThemeToggle />
       </div>
     </header>
   );
