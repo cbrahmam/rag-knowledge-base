@@ -1,5 +1,6 @@
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, useMemo } from 'react';
 import ChatMessage from './ChatMessage';
+import useHotkeys from '../hooks/useHotkeys';
 
 const SUGGESTED_QUESTIONS = [
   "What are the main topics covered in these documents?",
@@ -24,6 +25,11 @@ export default function ChatInterface({ messages, isLoading, onSend, onClear, ha
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isLoading]);
+
+  // Cmd/Ctrl+K focuses the question input from anywhere.
+  useHotkeys(useMemo(() => [
+    { combo: 'mod+k', handler: () => inputRef.current?.focus() },
+  ], []));
 
   function handleSubmit(e) {
     e.preventDefault();

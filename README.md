@@ -31,6 +31,7 @@ DocuMind creates a searchable AI knowledge base from your documents. Upload file
 - **Query analytics** — Usage dashboard: query volume, average latency, confidence mix, recent history
 - **Saved conversations** — Save chat sessions and restore them later
 - **Dark mode** — Light/dark theme toggle, remembers your choice and respects OS preference
+- **Keyboard shortcuts** — ⌘/Ctrl+K to focus the question box, Esc to close dialogs
 - **Knowledge base export** — Download a JSON manifest of all indexed documents (`GET /api/documents/export`)
 - **Sample documents** — Included sample docs for instant testing
 
