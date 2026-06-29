@@ -17,6 +17,7 @@ import {
   listCollections,
   saveConversation,
   moveDocument,
+  updateTags,
 } from '../api/client';
 
 export default function MainPage() {
@@ -67,6 +68,11 @@ export default function MainPage() {
     await refresh();
   }
 
+  async function handleUpdateTags(filename, tags) {
+    await updateTags(filename, tags);
+    await refresh();
+  }
+
   async function handleLoadSamples() {
     await loadSampleDocs();
     await refresh();
@@ -94,6 +100,7 @@ export default function MainPage() {
           onSummarize={setSummaryFor}
           onPreview={setPreviewFor}
           onMove={handleMove}
+          onUpdateTags={handleUpdateTags}
         />
       }
     >

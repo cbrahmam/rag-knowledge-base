@@ -32,6 +32,14 @@ export async function moveDocument(filename, collection) {
   return request(`/documents/${encodeURIComponent(filename)}/collection`, { method: 'PATCH', body: formData });
 }
 
+export async function updateTags(filename, tags) {
+  return request(`/documents/${encodeURIComponent(filename)}/tags`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ tags }),
+  });
+}
+
 export async function deleteDocument(filename) {
   return request(`/documents/${encodeURIComponent(filename)}`, { method: 'DELETE' });
 }
