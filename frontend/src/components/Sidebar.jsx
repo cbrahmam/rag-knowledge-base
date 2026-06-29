@@ -16,6 +16,7 @@ export default function Sidebar({
   onPreview,
   onMove,
   onUpdateTags,
+  onReindex,
   onRenameCollection,
   onDeleteCollection,
 }) {
@@ -141,7 +142,7 @@ export default function Sidebar({
 
       <div className="border-t border-border" />
 
-      <DocumentList documents={filtered} onDelete={onDelete} onSummarize={onSummarize} onPreview={onPreview} onMove={onMove} onUpdateTags={onUpdateTags} collections={collectionNames} />
+      <DocumentList documents={filtered} onDelete={onDelete} onSummarize={onSummarize} onPreview={onPreview} onMove={onMove} onUpdateTags={onUpdateTags} onReindex={onReindex} collections={collectionNames} />
 
       {search && filtered.length === 0 && (
         <div className="px-3 pb-3">

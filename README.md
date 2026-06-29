@@ -122,7 +122,9 @@ count and page count) in a modal.
 Chunk size and overlap are tuned per file type (Markdown 800/100, PDF & DOCX 600/80, TXT 500/50),
 and Markdown is split at heading boundaries so chunks respect sections. Override per upload via
 the **Advanced** section in the uploader, or the `chunk_size` / `overlap` form fields on
-`POST /api/documents/upload`.
+`POST /api/documents/upload`. Re-chunk an already-uploaded document with
+`POST /api/documents/{filename}/reindex` (optional `chunk_size`/`overlap`), or the **Reindex**
+action on a document card.
 
 ## Getting Started
 

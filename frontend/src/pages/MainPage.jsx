@@ -20,6 +20,7 @@ import {
   updateTags,
   renameCollection,
   deleteCollection,
+  reindexDocument,
 } from '../api/client';
 
 export default function MainPage() {
@@ -75,6 +76,11 @@ export default function MainPage() {
     await refresh();
   }
 
+  async function handleReindex(filename) {
+    await reindexDocument(filename);
+    await refresh();
+  }
+
   async function handleRenameCollection(name, newName) {
     await renameCollection(name, newName);
     if (activeCollection === name) setActiveCollection(newName);
@@ -115,6 +121,7 @@ export default function MainPage() {
           onPreview={setPreviewFor}
           onMove={handleMove}
           onUpdateTags={handleUpdateTags}
+          onReindex={handleReindex}
           onRenameCollection={handleRenameCollection}
           onDeleteCollection={handleDeleteCollection}
         />
