@@ -82,6 +82,8 @@ time, average sources per answer, the confidence distribution, and recent questi
 - `GET /api/analytics/history?limit=N` — recent query records
 - `DELETE /api/analytics/history` — clear the log
 
+Recent questions in the dashboard are clickable to **re-ask** them.
+
 ## Document summaries
 
 Click **Summary** on any document (hover the card) to get an AI-generated overview, key points,

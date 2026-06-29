@@ -17,7 +17,7 @@ function StatCard({ label, value, sub }) {
   );
 }
 
-export default function AnalyticsPanel({ onClose }) {
+export default function AnalyticsPanel({ onClose, onAskQuestion }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [clearing, setClearing] = useState(false);
@@ -93,15 +93,27 @@ export default function AnalyticsPanel({ onClose }) {
             </div>
 
             <div>
-              <p className="text-[11px] font-medium text-text-secondary uppercase tracking-wide mb-2">Recent questions</p>
+              <p className="text-[11px] font-medium text-text-secondary uppercase tracking-wide mb-2">
+                Recent questions{onAskQuestion ? ' · click to re-ask' : ''}
+              </p>
               <div className="space-y-1">
-                {data.recent.map((r, i) => (
-                  <div key={i} className="flex items-center gap-2 text-xs px-2 py-1.5 rounded-lg hover:bg-bg transition-colors">
-                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${CONFIDENCE_COLORS[r.confidence]}`} />
-                    <span className="flex-1 truncate text-text-primary">{r.question}</span>
-                    <span className="text-text-secondary/70 shrink-0">{(r.processing_time_ms / 1000).toFixed(1)}s</span>
-                  </div>
-                ))}
+                {data.recent.map((r, i) => {
+                  const Row = onAskQuestion ? 'button' : 'div';
+                  return (
+                    <Row
+                      key={i}
+                      onClick={onAskQuestion ? () => { onAskQuestion(r.question); onClose(); } : undefined}
+                      title={onAskQuestion ? 'Re-ask this question' : undefined}
+                      className={`w-full flex items-center gap-2 text-xs px-2 py-1.5 rounded-lg transition-colors text-left ${
+                        onAskQuestion ? 'hover:bg-accent/10 hover:text-accent cursor-pointer' : 'hover:bg-bg'
+                      }`}
+                    >
+                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${CONFIDENCE_COLORS[r.confidence]}`} />
+                      <span className="flex-1 truncate text-text-primary">{r.question}</span>
+                      <span className="text-text-secondary/70 shrink-0">{(r.processing_time_ms / 1000).toFixed(1)}s</span>
+                    </Row>
+                  );
+                })}
               </div>
             </div>
 
