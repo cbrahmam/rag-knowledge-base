@@ -44,12 +44,17 @@ class DocumentListItem(BaseModel):
     uploaded_at: str
     size_bytes: int
     collection: str = DEFAULT_COLLECTION
+    tags: List[str] = []
 
 
 class CollectionInfo(BaseModel):
     name: str
     document_count: int
     chunk_count: int
+
+
+class TagUpdateRequest(BaseModel):
+    tags: List[str]
 
 
 class SearchResult(BaseModel):

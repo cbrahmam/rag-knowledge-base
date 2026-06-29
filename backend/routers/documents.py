@@ -15,6 +15,7 @@ from models.schemas import (
     CollectionInfo,
     DocumentSummary,
     DocumentContent,
+    TagUpdateRequest,
     DEFAULT_COLLECTION,
 )
 from services.doc_parser import parse_document, SUPPORTED_TYPES
@@ -157,6 +158,7 @@ async def list_documents():
             uploaded_at=meta["uploaded_at"],
             size_bytes=meta["size_bytes"],
             collection=meta.get("collection", DEFAULT_COLLECTION),
+            tags=meta.get("tags", []),
         ))
     return documents
 
@@ -164,6 +166,34 @@ async def list_documents():
 @router.get("/collections", response_model=List[CollectionInfo])
 async def get_collections():
     return list_collections()
+
+
+@router.put("/{filename}/tags", response_model=DocumentListItem)
+async def update_tags(filename: str, request: TagUpdateRequest):
+    store = _load_store()
+    if filename not in store:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    # Normalize: trim, drop blanks, de-dupe (case-insensitive), preserve order.
+    seen, tags = set(), []
+    for t in request.tags:
+        t = t.strip()
+        if t and t.lower() not in seen:
+            seen.add(t.lower())
+            tags.append(t)
+
+    store[filename]["tags"] = tags
+    _save_store(store)
+    meta = store[filename]
+    return DocumentListItem(
+        filename=filename,
+        file_type=meta["file_type"],
+        total_chunks=meta["total_chunks"],
+        uploaded_at=meta["uploaded_at"],
+        size_bytes=meta["size_bytes"],
+        collection=meta.get("collection", DEFAULT_COLLECTION),
+        tags=tags,
+    )
 
 
 @router.patch("/{filename}/collection")

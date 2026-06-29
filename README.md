@@ -27,6 +27,7 @@ DocuMind creates a searchable AI knowledge base from your documents. Upload file
 - **Conversation context** — Follow-up questions understand the conversation history
 - **Chat export** — Download conversations as Markdown or copy to clipboard
 - **Collections** — Organize documents into named collections and scope questions to one
+- **Document tags** — Add free-form tags to documents (`PUT /api/documents/{filename}/tags`)
 - **Query analytics** — Usage dashboard: query volume, average latency, confidence mix, recent history
 - **Saved conversations** — Save chat sessions and restore them later
 - **Dark mode** — Light/dark theme toggle, remembers your choice and respects OS preference
