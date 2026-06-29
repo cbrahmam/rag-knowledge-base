@@ -42,6 +42,13 @@ export async function moveDocument(filename, collection) {
   return request(`/documents/${encodeURIComponent(filename)}/collection`, { method: 'PATCH', body: formData });
 }
 
+export async function reindexDocument(filename, { chunkSize, overlap } = {}) {
+  const formData = new FormData();
+  if (chunkSize != null) formData.append('chunk_size', chunkSize);
+  if (overlap != null) formData.append('overlap', overlap);
+  return request(`/documents/${encodeURIComponent(filename)}/reindex`, { method: 'POST', body: formData });
+}
+
 export async function updateTags(filename, tags) {
   return request(`/documents/${encodeURIComponent(filename)}/tags`, {
     method: 'PUT',

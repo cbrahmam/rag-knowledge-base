@@ -17,10 +17,20 @@ function formatDate(iso) {
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-export default function DocumentCard({ doc, onDelete, onSummarize, onPreview, onMove, onUpdateTags, collections = [] }) {
+export default function DocumentCard({ doc, onDelete, onSummarize, onPreview, onMove, onUpdateTags, onReindex, collections = [] }) {
   const [confirming, setConfirming] = useState(false);
   const [editingTags, setEditingTags] = useState(false);
   const [tagInput, setTagInput] = useState((doc.tags || []).join(', '));
+  const [reindexing, setReindexing] = useState(false);
+
+  async function handleReindex() {
+    setReindexing(true);
+    try {
+      await onReindex(doc.filename);
+    } finally {
+      setReindexing(false);
+    }
+  }
 
   const moveTargets = collections.filter(c => c !== doc.collection);
   const tags = doc.tags || [];
@@ -89,6 +99,16 @@ export default function DocumentCard({ doc, onDelete, onSummarize, onPreview, on
               <option value="">Move…</option>
               {moveTargets.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
+          )}
+          {onReindex && (
+            <button
+              onClick={handleReindex}
+              disabled={reindexing}
+              title="Re-chunk & re-embed with current adaptive settings"
+              className="opacity-0 group-hover:opacity-100 text-xs px-2 py-1 rounded transition-all text-text-secondary hover:text-accent hover:bg-accent/10 disabled:opacity-50"
+            >
+              {reindexing ? '…' : 'Reindex'}
+            </button>
           )}
           {onSummarize && (
             <button
