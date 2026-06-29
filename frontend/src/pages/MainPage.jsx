@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import Layout from '../components/Layout';
 import Sidebar from '../components/Sidebar';
 import ChatInterface from '../components/ChatInterface';
@@ -8,6 +8,7 @@ import ConversationsModal from '../components/ConversationsModal';
 import DocumentPreviewModal from '../components/DocumentPreviewModal';
 import BatchQuestionsModal from '../components/BatchQuestionsModal';
 import useChat from '../hooks/useChat';
+import useHotkeys from '../hooks/useHotkeys';
 import {
   uploadDocument,
   listDocuments,
@@ -43,6 +44,17 @@ export default function MainPage() {
   }, []);
 
   useEffect(() => { refresh(); }, [refresh]);
+
+  // Escape closes whichever modal is open (most-recently-layered first).
+  const closeTopModal = useCallback(() => {
+    if (previewFor) setPreviewFor(null);
+    else if (summaryFor) setSummaryFor(null);
+    else if (showBatch) setShowBatch(false);
+    else if (showConversations) setShowConversations(false);
+    else if (showAnalytics) setShowAnalytics(false);
+  }, [previewFor, summaryFor, showBatch, showConversations, showAnalytics]);
+
+  useHotkeys(useMemo(() => [{ combo: 'escape', handler: closeTopModal }], [closeTopModal]));
 
   // Scope each question to the active collection (null = search everything),
   // forwarding the search mode chosen in the chat header.
