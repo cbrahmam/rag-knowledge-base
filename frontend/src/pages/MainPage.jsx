@@ -150,7 +150,7 @@ export default function MainPage() {
         onOpenSaved={() => setShowConversations(true)}
         onOpenBatch={() => setShowBatch(true)}
       />
-      {showAnalytics && <AnalyticsPanel onClose={() => setShowAnalytics(false)} />}
+      {showAnalytics && <AnalyticsPanel onClose={() => setShowAnalytics(false)} onAskQuestion={handleSend} />}
       {summaryFor && (
         <SummaryModal
           filename={summaryFor}
