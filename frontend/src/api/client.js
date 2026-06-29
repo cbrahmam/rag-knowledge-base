@@ -26,6 +26,16 @@ export async function listCollections() {
   return request('/documents/collections');
 }
 
+export async function renameCollection(name, newName) {
+  const formData = new FormData();
+  formData.append('new_name', newName);
+  return request(`/documents/collections/${encodeURIComponent(name)}`, { method: 'PUT', body: formData });
+}
+
+export async function deleteCollection(name) {
+  return request(`/documents/collections/${encodeURIComponent(name)}`, { method: 'DELETE' });
+}
+
 export async function moveDocument(filename, collection) {
   const formData = new FormData();
   formData.append('collection', collection);
