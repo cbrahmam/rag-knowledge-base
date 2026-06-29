@@ -18,6 +18,8 @@ import {
   saveConversation,
   moveDocument,
   updateTags,
+  renameCollection,
+  deleteCollection,
 } from '../api/client';
 
 export default function MainPage() {
@@ -73,6 +75,18 @@ export default function MainPage() {
     await refresh();
   }
 
+  async function handleRenameCollection(name, newName) {
+    await renameCollection(name, newName);
+    if (activeCollection === name) setActiveCollection(newName);
+    await refresh();
+  }
+
+  async function handleDeleteCollection(name) {
+    await deleteCollection(name);
+    if (activeCollection === name) setActiveCollection(null);
+    await refresh();
+  }
+
   async function handleLoadSamples() {
     await loadSampleDocs();
     await refresh();
@@ -101,6 +115,8 @@ export default function MainPage() {
           onPreview={setPreviewFor}
           onMove={handleMove}
           onUpdateTags={handleUpdateTags}
+          onRenameCollection={handleRenameCollection}
+          onDeleteCollection={handleDeleteCollection}
         />
       }
     >

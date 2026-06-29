@@ -216,6 +216,24 @@ def delete_document(filename: str) -> int:
     return 0
 
 
+def rename_collection(old_name: str, new_name: str) -> int:
+    """Reassign every chunk in one collection to another collection name."""
+    collection = _get_collection()
+    existing = collection.get(where={"collection": old_name}, include=["metadatas"])
+    if not existing["ids"]:
+        return 0
+
+    updated = []
+    for meta in existing["metadatas"]:
+        meta = dict(meta)
+        meta["collection"] = new_name
+        updated.append(meta)
+
+    collection.update(ids=existing["ids"], metadatas=updated)
+    logger.info("Reassigned %d chunks from collection '%s' to '%s'", len(existing["ids"]), old_name, new_name)
+    return len(existing["ids"])
+
+
 def set_document_collection(filename: str, new_collection: str) -> int:
     """Reassign all of a document's chunks to a different collection."""
     collection = _get_collection()

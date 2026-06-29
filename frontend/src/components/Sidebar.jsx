@@ -16,9 +16,14 @@ export default function Sidebar({
   onPreview,
   onMove,
   onUpdateTags,
+  onRenameCollection,
+  onDeleteCollection,
 }) {
   const [search, setSearch] = useState('');
   const [loadingSamples, setLoadingSamples] = useState(false);
+  const [renaming, setRenaming] = useState(false);
+  const [renameValue, setRenameValue] = useState('');
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [exporting, setExporting] = useState(false);
   const collectionNames = collections.map(c => c.name);
 
@@ -82,6 +87,43 @@ export default function Sidebar({
               </option>
             ))}
           </select>
+
+          {activeCollection && activeCollection !== 'General' && (
+            renaming ? (
+              <div className="mt-1.5 flex items-center gap-1.5">
+                <input
+                  autoFocus
+                  value={renameValue}
+                  onChange={e => setRenameValue(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && renameValue.trim()) { onRenameCollection?.(activeCollection, renameValue.trim()); setRenaming(false); }
+                    if (e.key === 'Escape') setRenaming(false);
+                  }}
+                  placeholder="New name"
+                  className="flex-1 text-[11px] px-2 py-1 border border-border rounded bg-bg outline-none focus:border-accent transition-colors"
+                />
+                <button onClick={() => { if (renameValue.trim()) { onRenameCollection?.(activeCollection, renameValue.trim()); setRenaming(false); } }} className="text-[11px] text-accent">Save</button>
+              </div>
+            ) : (
+              <div className="mt-1.5 flex items-center gap-3 px-0.5">
+                <button
+                  onClick={() => { setRenameValue(activeCollection); setRenaming(true); }}
+                  className="text-[10px] text-text-secondary hover:text-accent transition-colors"
+                >
+                  Rename
+                </button>
+                <button
+                  onClick={() => {
+                    if (confirmDelete) { onDeleteCollection?.(activeCollection); setConfirmDelete(false); }
+                    else { setConfirmDelete(true); setTimeout(() => setConfirmDelete(false), 3000); }
+                  }}
+                  className={`text-[10px] transition-colors ${confirmDelete ? 'text-danger font-medium' : 'text-text-secondary hover:text-danger'}`}
+                >
+                  {confirmDelete ? 'Confirm delete' : 'Delete'}
+                </button>
+              </div>
+            )
+          )}
         </div>
       )}
 

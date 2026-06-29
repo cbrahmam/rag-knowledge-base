@@ -28,6 +28,7 @@ from services.vector_store import (
     list_collections,
     get_document_chunks,
     set_document_collection,
+    rename_collection,
 )
 from services.summarizer import summarize_document
 
@@ -166,6 +167,34 @@ async def list_documents():
 @router.get("/collections", response_model=List[CollectionInfo])
 async def get_collections():
     return list_collections()
+
+
+def _reassign_collection_in_store(store: dict, old: str, new: str) -> None:
+    for meta in store.values():
+        if meta.get("collection", DEFAULT_COLLECTION) == old:
+            meta["collection"] = new
+
+
+@router.put("/collections/{name}")
+async def rename_collection_endpoint(name: str, new_name: str = Form(...)):
+    new_name = new_name.strip() or DEFAULT_COLLECTION
+    moved = rename_collection(name, new_name)
+    store = _load_store()
+    _reassign_collection_in_store(store, name, new_name)
+    _save_store(store)
+    return {"renamed_from": name, "renamed_to": new_name, "chunks_moved": moved}
+
+
+@router.delete("/collections/{name}")
+async def delete_collection_endpoint(name: str):
+    """Delete a collection by reassigning its documents to the default collection."""
+    if name == DEFAULT_COLLECTION:
+        raise HTTPException(status_code=400, detail="Cannot delete the default collection")
+    moved = rename_collection(name, DEFAULT_COLLECTION)
+    store = _load_store()
+    _reassign_collection_in_store(store, name, DEFAULT_COLLECTION)
+    _save_store(store)
+    return {"deleted": name, "reassigned_to": DEFAULT_COLLECTION, "chunks_moved": moved}
 
 
 @router.put("/{filename}/tags", response_model=DocumentListItem)
