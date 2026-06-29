@@ -257,6 +257,62 @@ async def delete_document(filename: str):
     return {"message": f"Deleted {filename}", "status": "deleted"}
 
 
+@router.post("/{filename}/reindex", response_model=DocumentUploadResponse)
+async def reindex_document(
+    filename: str,
+    chunk_size: Optional[int] = Form(None),
+    overlap: Optional[int] = Form(None),
+):
+    """Re-chunk and re-embed an already-uploaded document, optionally with new
+    chunk settings. Preserves the document's collection and tags."""
+    store = _load_store()
+    if filename not in store:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    file_path = UPLOAD_DIR / filename
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="Document file is no longer available")
+
+    meta = store[filename]
+    collection = meta.get("collection", DEFAULT_COLLECTION)
+
+    parsed = parse_document(str(file_path), filename)
+    chunks = chunk_document(
+        parsed.text_content,
+        source_document=filename,
+        file_type=parsed.file_type,
+        source_pages=parsed.pages,
+        chunk_size=chunk_size,
+        overlap=overlap,
+    )
+
+    default_size, default_overlap = adaptive_params(parsed.file_type)
+    used_size = chunk_size or default_size
+    used_overlap = overlap if overlap is not None else default_overlap
+
+    vs_delete(filename)  # drop the old chunks before re-adding
+    embeddings = generate_embeddings([c.text for c in chunks])
+    add_document(chunks, embeddings, collection_name=collection)
+
+    meta["total_chunks"] = len(chunks)
+    meta["total_characters"] = parsed.total_characters
+    meta["chunk_size"] = used_size
+    meta["overlap"] = used_overlap
+    _save_store(store)
+
+    return DocumentUploadResponse(
+        filename=filename,
+        file_type=parsed.file_type,
+        total_chunks=len(chunks),
+        total_characters=parsed.total_characters,
+        status="reindexed",
+        message=f"Re-indexed {filename} into {len(chunks)} chunks",
+        collection=collection,
+        chunk_size=used_size,
+        overlap=used_overlap,
+    )
+
+
 @router.get("/stats")
 async def document_stats():
     return get_stats()
