@@ -1,12 +1,5 @@
 import { useState, useRef } from 'react';
 
-const ACCEPTED_TYPES = {
-  'application/pdf': '.pdf',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '.docx',
-  'text/plain': '.txt',
-  'text/markdown': '.md',
-};
-
 const ACCEPT_STRING = '.pdf,.docx,.txt,.md';
 
 export default function FileUpload({ onUpload, collections = [] }) {
