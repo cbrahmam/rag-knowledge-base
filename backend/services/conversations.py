@@ -15,8 +15,8 @@ from typing import List, Optional
 
 from models.schemas import (
     ConversationCreate,
-    SavedConversation,
     ConversationListItem,
+    SavedConversation,
 )
 
 logger = logging.getLogger(__name__)

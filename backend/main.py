@@ -10,12 +10,12 @@ from fastapi import FastAPI  # noqa: E402
 from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
 
 from config import CORS_ORIGINS, VERSION  # noqa: E402
-from services.vector_store import get_stats  # noqa: E402
-from routers.documents import router as documents_router  # noqa: E402
-from routers.query import router as query_router  # noqa: E402
 from routers.analytics import router as analytics_router  # noqa: E402
-from routers.feedback import router as feedback_router  # noqa: E402
 from routers.conversations import router as conversations_router  # noqa: E402
+from routers.documents import router as documents_router  # noqa: E402
+from routers.feedback import router as feedback_router  # noqa: E402
+from routers.query import router as query_router  # noqa: E402
+from services.vector_store import get_stats  # noqa: E402
 
 logging.basicConfig(
     level=logging.INFO,

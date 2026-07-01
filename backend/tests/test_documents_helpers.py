@@ -1,7 +1,7 @@
 import pytest
 from fastapi import HTTPException
 
-from routers.documents import _safe_filename, _find_duplicate, _to_list_item
+from routers.documents import _find_duplicate, _safe_filename, _to_list_item
 
 
 def test_safe_filename_strips_directories():

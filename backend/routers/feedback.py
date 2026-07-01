@@ -3,7 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter
 
 from models.schemas import FeedbackRequest, FeedbackSummary
-from services.feedback import log_feedback, get_summary, clear_feedback
+from services.feedback import clear_feedback, get_summary, log_feedback
 
 router = APIRouter(prefix="/api/feedback", tags=["feedback"])
 

@@ -5,19 +5,18 @@ import logging
 import time
 from typing import Iterator, List, Optional
 
-
 from config import (
     ANTHROPIC_MODEL,
-    MAX_TOKENS,
-    SIMILARITY_THRESHOLD,
     DEFAULT_N_RESULTS,
     MAX_N_RESULTS,
+    MAX_TOKENS,
+    SIMILARITY_THRESHOLD,
 )
-from models.schemas import SearchResult, SourceCitation, RAGResponse
+from models.schemas import RAGResponse, SearchResult, SourceCitation
+from services import analytics
 from services.embeddings import generate_embeddings
 from services.llm import get_client
-from services.vector_store import search, keyword_search, hybrid_search
-from services import analytics
+from services.vector_store import hybrid_search, keyword_search, search
 
 
 def _retrieve(

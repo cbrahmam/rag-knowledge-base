@@ -13,7 +13,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import List
 
-from models.schemas import RAGResponse, QueryRecord, AnalyticsSummary
+from models.schemas import AnalyticsSummary, QueryRecord, RAGResponse
 
 logger = logging.getLogger(__name__)
 

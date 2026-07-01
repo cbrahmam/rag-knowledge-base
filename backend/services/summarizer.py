@@ -11,7 +11,7 @@ import logging
 import re
 from typing import List
 
-from config import ANTHROPIC_MODEL, MAX_TOKENS, MAX_SUMMARY_CONTEXT_CHARS
+from config import ANTHROPIC_MODEL, MAX_SUMMARY_CONTEXT_CHARS, MAX_TOKENS
 from models.schemas import DocumentSummary
 from services.llm import get_client
 

@@ -8,7 +8,7 @@ from typing import List, Optional
 import chromadb
 from rank_bm25 import BM25Okapi
 
-from models.schemas import Chunk, SearchResult, DEFAULT_COLLECTION
+from models.schemas import DEFAULT_COLLECTION, Chunk, SearchResult
 
 _TOKEN_RE = re.compile(r"[a-z0-9]+")
 
@@ -182,7 +182,7 @@ def hybrid_search(
         include=["distances"],
         where=where,
     )
-    sem_by_id = {sid: 1 - dist for sid, dist in zip(sem["ids"][0], sem["distances"][0])}
+    sem_by_id = {sid: 1 - dist for sid, dist in zip(sem["ids"][0], sem["distances"][0], strict=True)}
 
     scored = []
     for i, cid in enumerate(ids):
@@ -291,7 +291,7 @@ def get_document_chunks(filename: str) -> List[str]:
         return []
 
     paired = sorted(
-        zip(existing["documents"], existing["metadatas"]),
+        zip(existing["documents"], existing["metadatas"], strict=True),
         key=lambda p: p[1].get("chunk_index", 0),
     )
     return [doc for doc, _ in paired]

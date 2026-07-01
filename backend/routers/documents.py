@@ -7,31 +7,33 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import List, Optional
 
-from fastapi import APIRouter, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 
+from config import MAX_FILE_SIZE
 from models.schemas import (
-    DocumentUploadResponse,
-    DocumentListItem,
-    CollectionInfo,
-    DocumentSummary,
-    DocumentContent,
-    TagUpdateRequest,
     DEFAULT_COLLECTION,
+    CollectionInfo,
+    DocumentContent,
+    DocumentListItem,
+    DocumentSummary,
+    DocumentUploadResponse,
+    TagUpdateRequest,
 )
-from services.doc_parser import parse_document, SUPPORTED_TYPES
-from services.chunker import chunk_document, adaptive_params
+from services.chunker import adaptive_params, chunk_document
+from services.doc_parser import SUPPORTED_TYPES, parse_document
 from services.embeddings import generate_embeddings
+from services.summarizer import summarize_document
 from services.vector_store import (
     add_document,
-    delete_document as vs_delete,
+    get_document_chunks,
     get_stats,
     list_collections,
-    get_document_chunks,
-    set_document_collection,
     rename_collection,
+    set_document_collection,
 )
-from services.summarizer import summarize_document
-from config import MAX_FILE_SIZE
+from services.vector_store import (
+    delete_document as vs_delete,
+)
 
 router = APIRouter(prefix="/api/documents", tags=["documents"])
 
@@ -166,11 +168,11 @@ async def upload_document(
     except ValueError as e:
         if file_path.exists():
             os.remove(file_path)
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
         if file_path.exists():
             os.remove(file_path)
-        raise HTTPException(status_code=500, detail=f"Failed to process document: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to process document: {str(e)}") from e
 
 
 @router.get("", response_model=List[DocumentListItem])
@@ -372,9 +374,9 @@ async def summarize(filename: str, refresh: bool = False):
     try:
         summary = summarize_document(filename, chunks)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to summarize: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to summarize: {str(e)}") from e
 
     store[filename]["summary"] = summary.model_dump(exclude={"cached"})
     _save_store(store)
