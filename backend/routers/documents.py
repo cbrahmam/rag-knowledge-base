@@ -31,14 +31,26 @@ from services.vector_store import (
     rename_collection,
 )
 from services.summarizer import summarize_document
+from config import MAX_FILE_SIZE
 
 router = APIRouter(prefix="/api/documents", tags=["documents"])
 
 UPLOAD_DIR = Path(__file__).parent.parent / "uploads"
 CHUNKS_STORE = Path(__file__).parent.parent / "chunks_store.json"
-MAX_FILE_SIZE = 10 * 1024 * 1024
 
 UPLOAD_DIR.mkdir(exist_ok=True)
+
+
+def _safe_filename(filename: Optional[str]) -> str:
+    """Reduce an uploaded filename to a safe basename.
+
+    Strips any directory components so a crafted name like '../../etc/passwd'
+    can't escape the uploads directory (path traversal).
+    """
+    name = Path(filename or "").name
+    if not name or name in {".", ".."}:
+        raise HTTPException(status_code=400, detail="Invalid filename")
+    return name
 
 
 def _load_store() -> dict:
@@ -69,7 +81,8 @@ async def upload_document(
     overlap: Optional[int] = Form(None),
 ):
     collection = collection.strip() or DEFAULT_COLLECTION
-    ext = Path(file.filename).suffix.lower()
+    filename = _safe_filename(file.filename)
+    ext = Path(filename).suffix.lower()
     if ext not in SUPPORTED_TYPES:
         raise HTTPException(
             status_code=400,
@@ -81,22 +94,22 @@ async def upload_document(
         raise HTTPException(status_code=400, detail="File size exceeds 10MB limit")
 
     content_hash = hashlib.sha256(content).hexdigest()
-    duplicate = _find_duplicate(_load_store(), content_hash, file.filename)
+    duplicate = _find_duplicate(_load_store(), content_hash, filename)
     if duplicate:
         raise HTTPException(
             status_code=409,
             detail=f"This document is identical to an already-uploaded file: {duplicate}",
         )
 
-    file_path = UPLOAD_DIR / file.filename
+    file_path = UPLOAD_DIR / filename
     with open(file_path, "wb") as f:
         f.write(content)
 
     try:
-        parsed = parse_document(str(file_path), file.filename)
+        parsed = parse_document(str(file_path), filename)
         chunks = chunk_document(
             parsed.text_content,
-            source_document=file.filename,
+            source_document=filename,
             file_type=parsed.file_type,
             source_pages=parsed.pages,
             chunk_size=chunk_size,
@@ -112,7 +125,7 @@ async def upload_document(
         add_document(chunks, embeddings, collection_name=collection)
 
         store = _load_store()
-        store[file.filename] = {
+        store[filename] = {
             "file_type": parsed.file_type,
             "total_chunks": len(chunks),
             "total_characters": parsed.total_characters,
@@ -126,12 +139,12 @@ async def upload_document(
         _save_store(store)
 
         return DocumentUploadResponse(
-            filename=file.filename,
+            filename=filename,
             file_type=parsed.file_type,
             total_chunks=len(chunks),
             total_characters=parsed.total_characters,
             status="processed",
-            message=f"Successfully processed {file.filename} into {len(chunks)} chunks",
+            message=f"Successfully processed {filename} into {len(chunks)} chunks",
             collection=collection,
             chunk_size=used_size,
             overlap=used_overlap,
