@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 from typing import List, Optional
 
 
@@ -81,12 +81,27 @@ class RAGResponse(BaseModel):
 
 
 class QueryRequest(BaseModel):
-    question: str
+    question: str = Field(min_length=1, max_length=2000)
     context: Optional[List[dict]] = None
     search_mode: str = "hybrid"  # "hybrid" | "semantic" | "keyword"
-    alpha: float = 0.5  # hybrid blend weight: 1.0=semantic, 0.0=keyword
+    alpha: float = Field(default=0.5, ge=0.0, le=1.0)  # 1.0=semantic, 0.0=keyword
     collection: Optional[str] = None  # scope retrieval to one collection
-    n_results: int = 5  # number of chunks to retrieve (1-20)
+    n_results: int = Field(default=5, ge=1, le=20)  # chunks to retrieve
+
+    @field_validator("question")
+    @classmethod
+    def _strip_question(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
+            raise ValueError("question must not be empty")
+        return v
+
+    @field_validator("search_mode")
+    @classmethod
+    def _valid_mode(cls, v: str) -> str:
+        if v not in {"hybrid", "semantic", "keyword"}:
+            raise ValueError("search_mode must be hybrid, semantic or keyword")
+        return v
 
 
 class MultiQueryRequest(BaseModel):
