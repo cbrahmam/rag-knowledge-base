@@ -8,14 +8,17 @@ from typing import Iterator, List, Optional
 
 import anthropic
 
+from config import (
+    ANTHROPIC_MODEL,
+    MAX_TOKENS,
+    SIMILARITY_THRESHOLD,
+    DEFAULT_N_RESULTS,
+    MAX_N_RESULTS,
+)
 from models.schemas import SearchResult, SourceCitation, RAGResponse
 from services.embeddings import generate_embeddings
 from services.vector_store import search, keyword_search, hybrid_search
 from services import analytics
-
-
-DEFAULT_N_RESULTS = 5
-MAX_N_RESULTS = 20
 
 
 def _retrieve(
@@ -45,8 +48,6 @@ SYSTEM_PROMPT = (
     "If the context doesn't contain enough information to answer the question, say so clearly. "
     "Always cite which document and section your answer comes from."
 )
-
-SIMILARITY_THRESHOLD = 0.3
 
 
 def _build_context_prompt(
@@ -172,8 +173,8 @@ def query(
 
     client = _get_client()
     response = client.messages.create(
-        model="claude-sonnet-4-6-20250514",
-        max_tokens=1024,
+        model=ANTHROPIC_MODEL,
+        max_tokens=MAX_TOKENS,
         system=SYSTEM_PROMPT,
         messages=[{"role": "user", "content": prompt}],
     )
@@ -254,8 +255,8 @@ def query_stream(
     client = _get_client()
 
     with client.messages.stream(
-        model="claude-sonnet-4-6-20250514",
-        max_tokens=1024,
+        model=ANTHROPIC_MODEL,
+        max_tokens=MAX_TOKENS,
         system=SYSTEM_PROMPT,
         messages=[{"role": "user", "content": prompt}],
     ) as stream:
