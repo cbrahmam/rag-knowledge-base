@@ -5,12 +5,7 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import SourceCard from './SourceCard';
 import { submitFeedback } from '../api/client';
-
-const CONFIDENCE_STYLES = {
-  high: 'bg-green-100 text-green-700',
-  medium: 'bg-amber-100 text-amber-700',
-  low: 'bg-red-100 text-red-700',
-};
+import { CONFIDENCE_STYLES } from '../constants/confidence';
 
 function FeedbackButtons({ question, message }) {
   const [rating, setRating] = useState(null);
