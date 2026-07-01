@@ -1,11 +1,17 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
 
-from routers.documents import router as documents_router
-from routers.query import router as query_router
-from routers.analytics import router as analytics_router
-from routers.feedback import router as feedback_router
-from routers.conversations import router as conversations_router
+# Load environment variables from a .env file before anything reads them
+# (e.g. ANTHROPIC_API_KEY used by the RAG and summarization services).
+load_dotenv()
+
+from fastapi import FastAPI  # noqa: E402
+from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
+
+from routers.documents import router as documents_router  # noqa: E402
+from routers.query import router as query_router  # noqa: E402
+from routers.analytics import router as analytics_router  # noqa: E402
+from routers.feedback import router as feedback_router  # noqa: E402
+from routers.conversations import router as conversations_router  # noqa: E402
 
 app = FastAPI(title="DocuMind", description="AI-powered knowledge base with RAG")
 
