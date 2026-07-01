@@ -2,11 +2,9 @@ from __future__ import annotations
 
 import json
 import logging
-import os
 import time
 from typing import Iterator, List, Optional
 
-import anthropic
 
 from config import (
     ANTHROPIC_MODEL,
@@ -17,6 +15,7 @@ from config import (
 )
 from models.schemas import SearchResult, SourceCitation, RAGResponse
 from services.embeddings import generate_embeddings
+from services.llm import get_client
 from services.vector_store import search, keyword_search, hybrid_search
 from services import analytics
 
@@ -121,13 +120,6 @@ Instructions:
 - Write a direct, well-formatted answer (Markdown allowed). Do NOT wrap it in JSON."""
 
 
-def _get_client() -> anthropic.Anthropic:
-    api_key = os.getenv("ANTHROPIC_API_KEY")
-    if not api_key:
-        raise ValueError("ANTHROPIC_API_KEY environment variable is not set")
-    return anthropic.Anthropic(api_key=api_key)
-
-
 def _determine_confidence(results: List[SearchResult]) -> str:
     if not results:
         return "low"
@@ -167,7 +159,7 @@ def query(
 
     prompt = _build_context_prompt(question, relevant_results, conversation_context)
 
-    client = _get_client()
+    client = get_client()
     response = client.messages.create(
         model=ANTHROPIC_MODEL,
         max_tokens=MAX_TOKENS,
@@ -248,7 +240,7 @@ def query_stream(
         return
 
     prompt = _build_streaming_prompt(question, relevant_results, conversation_context)
-    client = _get_client()
+    client = get_client()
 
     with client.messages.stream(
         model=ANTHROPIC_MODEL,
