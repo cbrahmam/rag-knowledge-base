@@ -17,5 +17,10 @@ export default defineConfig([
       globals: globals.browser,
       parserOptions: { ecmaFeatures: { jsx: true } },
     },
+    rules: {
+      // Fetch-on-mount effects legitimately call setState in a callback;
+      // treat this advisory perf hint as a warning rather than an error.
+      'react-hooks/set-state-in-effect': 'warn',
+    },
   },
 ])

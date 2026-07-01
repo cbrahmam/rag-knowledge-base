@@ -5,7 +5,6 @@ from typing import List, Optional
 
 from models.schemas import Chunk
 
-
 SENTENCE_BOUNDARY = re.compile(r"(?<=[.!?])\s+")
 MARKDOWN_HEADING = re.compile(r"^#{1,6}\s", re.MULTILINE)
 

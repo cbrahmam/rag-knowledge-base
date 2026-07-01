@@ -5,7 +5,7 @@ from typing import List
 from fastapi import APIRouter, Query
 
 from models.schemas import AnalyticsSummary, QueryRecord
-from services.analytics import get_summary, get_history, clear_history
+from services.analytics import clear_history, get_history, get_summary
 
 router = APIRouter(prefix="/api/analytics", tags=["analytics"])
 

@@ -7,3 +7,4 @@ sentence-transformers
 chromadb
 anthropic
 rank-bm25
+python-dotenv

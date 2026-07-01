@@ -1,9 +1,9 @@
-import fitz
-from docx import Document
 from pathlib import Path
 
-from models.schemas import ParsedDocument
+import fitz
+from docx import Document
 
+from models.schemas import ParsedDocument
 
 SUPPORTED_TYPES = {".pdf", ".docx", ".txt", ".md"}
 

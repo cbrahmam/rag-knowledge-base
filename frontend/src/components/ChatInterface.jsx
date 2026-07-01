@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState, useMemo } from 'react';
 import ChatMessage from './ChatMessage';
 import useHotkeys from '../hooks/useHotkeys';
+import { downloadBlob, todayStamp } from '../utils/download';
 
 const SUGGESTED_QUESTIONS = [
   "What are the main topics covered in these documents?",
@@ -60,13 +61,7 @@ export default function ChatInterface({ messages, isLoading, onSend, onClear, ha
     });
     const md = `# DocuMind Conversation\n\n${lines.join('\n\n---\n\n')}\n`;
 
-    const blob = new Blob([md], { type: 'text/markdown' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `documind-chat-${new Date().toISOString().slice(0, 10)}.md`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadBlob(md, `documind-chat-${todayStamp()}.md`, 'text/markdown');
     showToast('Chat exported');
   }
 

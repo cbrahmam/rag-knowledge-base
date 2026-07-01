@@ -7,38 +7,52 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import List, Optional
 
-from fastapi import APIRouter, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 
+from config import MAX_FILE_SIZE
 from models.schemas import (
-    DocumentUploadResponse,
-    DocumentListItem,
-    CollectionInfo,
-    DocumentSummary,
-    DocumentContent,
-    TagUpdateRequest,
     DEFAULT_COLLECTION,
+    CollectionInfo,
+    DocumentContent,
+    DocumentListItem,
+    DocumentSummary,
+    DocumentUploadResponse,
+    TagUpdateRequest,
 )
-from services.doc_parser import parse_document, SUPPORTED_TYPES
-from services.chunker import chunk_document, adaptive_params
+from services.chunker import adaptive_params, chunk_document
+from services.doc_parser import SUPPORTED_TYPES, parse_document
 from services.embeddings import generate_embeddings
+from services.summarizer import summarize_document
 from services.vector_store import (
     add_document,
-    delete_document as vs_delete,
+    get_document_chunks,
     get_stats,
     list_collections,
-    get_document_chunks,
-    set_document_collection,
     rename_collection,
+    set_document_collection,
 )
-from services.summarizer import summarize_document
+from services.vector_store import (
+    delete_document as vs_delete,
+)
 
 router = APIRouter(prefix="/api/documents", tags=["documents"])
 
 UPLOAD_DIR = Path(__file__).parent.parent / "uploads"
 CHUNKS_STORE = Path(__file__).parent.parent / "chunks_store.json"
-MAX_FILE_SIZE = 10 * 1024 * 1024
 
 UPLOAD_DIR.mkdir(exist_ok=True)
+
+
+def _safe_filename(filename: Optional[str]) -> str:
+    """Reduce an uploaded filename to a safe basename.
+
+    Strips any directory components so a crafted name like '../../etc/passwd'
+    can't escape the uploads directory (path traversal).
+    """
+    name = Path(filename or "").name
+    if not name or name in {".", ".."}:
+        raise HTTPException(status_code=400, detail="Invalid filename")
+    return name
 
 
 def _load_store() -> dict:
@@ -61,6 +75,19 @@ def _find_duplicate(store: dict, content_hash: str, filename: str) -> Optional[s
     return None
 
 
+def _to_list_item(filename: str, meta: dict) -> DocumentListItem:
+    """Build a DocumentListItem from a stored metadata entry."""
+    return DocumentListItem(
+        filename=filename,
+        file_type=meta["file_type"],
+        total_chunks=meta["total_chunks"],
+        uploaded_at=meta["uploaded_at"],
+        size_bytes=meta["size_bytes"],
+        collection=meta.get("collection", DEFAULT_COLLECTION),
+        tags=meta.get("tags", []),
+    )
+
+
 @router.post("/upload", response_model=DocumentUploadResponse)
 async def upload_document(
     file: UploadFile = File(...),
@@ -69,7 +96,8 @@ async def upload_document(
     overlap: Optional[int] = Form(None),
 ):
     collection = collection.strip() or DEFAULT_COLLECTION
-    ext = Path(file.filename).suffix.lower()
+    filename = _safe_filename(file.filename)
+    ext = Path(filename).suffix.lower()
     if ext not in SUPPORTED_TYPES:
         raise HTTPException(
             status_code=400,
@@ -81,22 +109,22 @@ async def upload_document(
         raise HTTPException(status_code=400, detail="File size exceeds 10MB limit")
 
     content_hash = hashlib.sha256(content).hexdigest()
-    duplicate = _find_duplicate(_load_store(), content_hash, file.filename)
+    duplicate = _find_duplicate(_load_store(), content_hash, filename)
     if duplicate:
         raise HTTPException(
             status_code=409,
             detail=f"This document is identical to an already-uploaded file: {duplicate}",
         )
 
-    file_path = UPLOAD_DIR / file.filename
+    file_path = UPLOAD_DIR / filename
     with open(file_path, "wb") as f:
         f.write(content)
 
     try:
-        parsed = parse_document(str(file_path), file.filename)
+        parsed = parse_document(str(file_path), filename)
         chunks = chunk_document(
             parsed.text_content,
-            source_document=file.filename,
+            source_document=filename,
             file_type=parsed.file_type,
             source_pages=parsed.pages,
             chunk_size=chunk_size,
@@ -112,7 +140,7 @@ async def upload_document(
         add_document(chunks, embeddings, collection_name=collection)
 
         store = _load_store()
-        store[file.filename] = {
+        store[filename] = {
             "file_type": parsed.file_type,
             "total_chunks": len(chunks),
             "total_characters": parsed.total_characters,
@@ -126,12 +154,12 @@ async def upload_document(
         _save_store(store)
 
         return DocumentUploadResponse(
-            filename=file.filename,
+            filename=filename,
             file_type=parsed.file_type,
             total_chunks=len(chunks),
             total_characters=parsed.total_characters,
             status="processed",
-            message=f"Successfully processed {file.filename} into {len(chunks)} chunks",
+            message=f"Successfully processed {filename} into {len(chunks)} chunks",
             collection=collection,
             chunk_size=used_size,
             overlap=used_overlap,
@@ -140,28 +168,17 @@ async def upload_document(
     except ValueError as e:
         if file_path.exists():
             os.remove(file_path)
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
         if file_path.exists():
             os.remove(file_path)
-        raise HTTPException(status_code=500, detail=f"Failed to process document: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to process document: {str(e)}") from e
 
 
 @router.get("", response_model=List[DocumentListItem])
 async def list_documents():
     store = _load_store()
-    documents = []
-    for filename, meta in store.items():
-        documents.append(DocumentListItem(
-            filename=filename,
-            file_type=meta["file_type"],
-            total_chunks=meta["total_chunks"],
-            uploaded_at=meta["uploaded_at"],
-            size_bytes=meta["size_bytes"],
-            collection=meta.get("collection", DEFAULT_COLLECTION),
-            tags=meta.get("tags", []),
-        ))
-    return documents
+    return [_to_list_item(filename, meta) for filename, meta in store.items()]
 
 
 @router.get("/collections", response_model=List[CollectionInfo])
@@ -213,16 +230,7 @@ async def update_tags(filename: str, request: TagUpdateRequest):
 
     store[filename]["tags"] = tags
     _save_store(store)
-    meta = store[filename]
-    return DocumentListItem(
-        filename=filename,
-        file_type=meta["file_type"],
-        total_chunks=meta["total_chunks"],
-        uploaded_at=meta["uploaded_at"],
-        size_bytes=meta["size_bytes"],
-        collection=meta.get("collection", DEFAULT_COLLECTION),
-        tags=tags,
-    )
+    return _to_list_item(filename, store[filename])
 
 
 @router.patch("/{filename}/collection")
@@ -366,9 +374,9 @@ async def summarize(filename: str, refresh: bool = False):
     try:
         summary = summarize_document(filename, chunks)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to summarize: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to summarize: {str(e)}") from e
 
     store[filename]["summary"] = summary.model_dump(exclude={"cached"})
     _save_store(store)

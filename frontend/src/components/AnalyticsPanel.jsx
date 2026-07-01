@@ -1,11 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { getAnalytics, clearQueryHistory } from '../api/client';
-
-const CONFIDENCE_COLORS = {
-  high: 'bg-green-500',
-  medium: 'bg-amber-500',
-  low: 'bg-red-500',
-};
+import { CONFIDENCE_DOT as CONFIDENCE_COLORS } from '../constants/confidence';
 
 function StatCard({ label, value, sub }) {
   return (

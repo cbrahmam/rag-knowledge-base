@@ -6,7 +6,7 @@ from typing import List
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 
-from models.schemas import RAGResponse, QueryRequest, MultiQueryRequest
+from models.schemas import MultiQueryRequest, QueryRequest, RAGResponse
 from services.rag_engine import query, query_stream
 from services.vector_store import get_stats
 
@@ -25,9 +25,9 @@ async def ask_question(request: QueryRequest):
     try:
         return query(request.question, request.context, request.search_mode, request.alpha, request.collection, request.n_results)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/stream")
@@ -77,6 +77,6 @@ async def ask_multiple_questions(request: MultiQueryRequest):
             responses.append(response)
         return responses
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e

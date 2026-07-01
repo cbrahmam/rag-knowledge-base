@@ -2,6 +2,7 @@ import { useState } from 'react';
 import FileUpload from './FileUpload';
 import DocumentList from './DocumentList';
 import { exportKnowledgeBase } from '../api/client';
+import { downloadBlob, todayStamp } from '../utils/download';
 
 export default function Sidebar({
   documents,
@@ -32,13 +33,7 @@ export default function Sidebar({
     setExporting(true);
     try {
       const data = await exportKnowledgeBase();
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `documind-kb-${new Date().toISOString().slice(0, 10)}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
+      downloadBlob(JSON.stringify(data, null, 2), `documind-kb-${todayStamp()}.json`, 'application/json');
     } finally {
       setExporting(false);
     }

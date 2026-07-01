@@ -2,12 +2,7 @@ import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { askMultiple } from '../api/client';
-
-const CONFIDENCE_STYLES = {
-  high: 'bg-green-100 text-green-700',
-  medium: 'bg-amber-100 text-amber-700',
-  low: 'bg-red-100 text-red-700',
-};
+import { CONFIDENCE_STYLES } from '../constants/confidence';
 
 export default function BatchQuestionsModal({ onClose }) {
   const [text, setText] = useState('');

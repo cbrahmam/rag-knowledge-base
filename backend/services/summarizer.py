@@ -8,30 +8,19 @@ from __future__ import annotations
 
 import json
 import logging
-import os
 import re
 from typing import List
 
-import anthropic
-
+from config import ANTHROPIC_MODEL, MAX_SUMMARY_CONTEXT_CHARS, MAX_TOKENS
 from models.schemas import DocumentSummary
+from services.llm import get_client
 
 logger = logging.getLogger(__name__)
-
-# Cap the context we send so summarizing a large doc stays cheap and fast.
-MAX_CONTEXT_CHARS = 12000
 
 SYSTEM_PROMPT = (
     "You are a precise document analyst. You produce concise overviews of "
     "documents and propose useful questions a reader might ask about them."
 )
-
-
-def _get_client() -> anthropic.Anthropic:
-    api_key = os.getenv("ANTHROPIC_API_KEY")
-    if not api_key:
-        raise ValueError("ANTHROPIC_API_KEY environment variable is not set")
-    return anthropic.Anthropic(api_key=api_key)
 
 
 def _build_prompt(filename: str, text: str) -> str:
@@ -67,13 +56,13 @@ def summarize_document(filename: str, chunks: List[str]) -> DocumentSummary:
         raise ValueError("Document has no indexed content to summarize")
 
     text = "\n\n".join(chunks)
-    if len(text) > MAX_CONTEXT_CHARS:
-        text = text[:MAX_CONTEXT_CHARS] + "\n\n[... truncated ...]"
+    if len(text) > MAX_SUMMARY_CONTEXT_CHARS:
+        text = text[:MAX_SUMMARY_CONTEXT_CHARS] + "\n\n[... truncated ...]"
 
-    client = _get_client()
+    client = get_client()
     response = client.messages.create(
-        model="claude-sonnet-4-6-20250514",
-        max_tokens=1024,
+        model=ANTHROPIC_MODEL,
+        max_tokens=MAX_TOKENS,
         system=SYSTEM_PROMPT,
         messages=[{"role": "user", "content": _build_prompt(filename, text)}],
     )
