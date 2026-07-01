@@ -4,20 +4,28 @@ from dotenv import load_dotenv
 # (e.g. ANTHROPIC_API_KEY used by the RAG and summarization services).
 load_dotenv()
 
+import logging  # noqa: E402
+
 from fastapi import FastAPI  # noqa: E402
 from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
 
+from config import CORS_ORIGINS  # noqa: E402
 from routers.documents import router as documents_router  # noqa: E402
 from routers.query import router as query_router  # noqa: E402
 from routers.analytics import router as analytics_router  # noqa: E402
 from routers.feedback import router as feedback_router  # noqa: E402
 from routers.conversations import router as conversations_router  # noqa: E402
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+)
+
 app = FastAPI(title="DocuMind", description="AI-powered knowledge base with RAG")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
