@@ -28,6 +28,9 @@ def _float(name: str, default: float) -> float:
         return default
 
 
+# --- App ---
+VERSION: str = os.getenv("APP_VERSION", "1.0.0")
+
 # --- Anthropic / generation ---
 ANTHROPIC_MODEL: str = os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-6-20250514")
 MAX_TOKENS: int = _int("ANTHROPIC_MAX_TOKENS", 1024)
