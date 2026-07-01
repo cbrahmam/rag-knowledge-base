@@ -50,24 +50,31 @@ SYSTEM_PROMPT = (
 )
 
 
+def _format_context(results: List[SearchResult]) -> str:
+    parts = []
+    for r in results:
+        page_info = f", Page: {r.source_page}" if r.source_page else ""
+        parts.append(f"[Source: {r.source_document}{page_info}]\n{r.text}")
+    return "\n---\n".join(parts)
+
+
+def _format_conversation(conversation_context: Optional[List[dict]]) -> str:
+    if not conversation_context:
+        return ""
+    pairs = [
+        f"Q: {item.get('question', '')}\nA: {item.get('answer', '')}"
+        for item in conversation_context[-5:]
+    ]
+    return f"\nPrevious conversation:\n{'---'.join(pairs)}\n"
+
+
 def _build_context_prompt(
     question: str,
     results: List[SearchResult],
     conversation_context: Optional[List[dict]] = None,
 ) -> str:
-    context_parts = []
-    for r in results:
-        page_info = f", Page: {r.source_page}" if r.source_page else ""
-        context_parts.append(f"[Source: {r.source_document}{page_info}]\n{r.text}")
-
-    context_block = "\n---\n".join(context_parts)
-
-    conversation_section = ""
-    if conversation_context:
-        pairs = []
-        for item in conversation_context[-5:]:
-            pairs.append(f"Q: {item.get('question', '')}\nA: {item.get('answer', '')}")
-        conversation_section = f"\nPrevious conversation:\n{'---'.join(pairs)}\n"
+    context_block = _format_context(results)
+    conversation_section = _format_conversation(conversation_context)
 
     return f"""Context documents:
 ---
@@ -96,19 +103,8 @@ def _build_streaming_prompt(
     Sources and confidence are computed on the backend from the retrieved
     chunks, so the model only needs to produce the answer text.
     """
-    context_parts = []
-    for r in results:
-        page_info = f", Page: {r.source_page}" if r.source_page else ""
-        context_parts.append(f"[Source: {r.source_document}{page_info}]\n{r.text}")
-
-    context_block = "\n---\n".join(context_parts)
-
-    conversation_section = ""
-    if conversation_context:
-        pairs = []
-        for item in conversation_context[-5:]:
-            pairs.append(f"Q: {item.get('question', '')}\nA: {item.get('answer', '')}")
-        conversation_section = f"\nPrevious conversation:\n{'---'.join(pairs)}\n"
+    context_block = _format_context(results)
+    conversation_section = _format_conversation(conversation_context)
 
     return f"""Context documents:
 ---
