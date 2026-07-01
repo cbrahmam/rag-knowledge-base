@@ -73,6 +73,19 @@ def _find_duplicate(store: dict, content_hash: str, filename: str) -> Optional[s
     return None
 
 
+def _to_list_item(filename: str, meta: dict) -> DocumentListItem:
+    """Build a DocumentListItem from a stored metadata entry."""
+    return DocumentListItem(
+        filename=filename,
+        file_type=meta["file_type"],
+        total_chunks=meta["total_chunks"],
+        uploaded_at=meta["uploaded_at"],
+        size_bytes=meta["size_bytes"],
+        collection=meta.get("collection", DEFAULT_COLLECTION),
+        tags=meta.get("tags", []),
+    )
+
+
 @router.post("/upload", response_model=DocumentUploadResponse)
 async def upload_document(
     file: UploadFile = File(...),
@@ -163,18 +176,7 @@ async def upload_document(
 @router.get("", response_model=List[DocumentListItem])
 async def list_documents():
     store = _load_store()
-    documents = []
-    for filename, meta in store.items():
-        documents.append(DocumentListItem(
-            filename=filename,
-            file_type=meta["file_type"],
-            total_chunks=meta["total_chunks"],
-            uploaded_at=meta["uploaded_at"],
-            size_bytes=meta["size_bytes"],
-            collection=meta.get("collection", DEFAULT_COLLECTION),
-            tags=meta.get("tags", []),
-        ))
-    return documents
+    return [_to_list_item(filename, meta) for filename, meta in store.items()]
 
 
 @router.get("/collections", response_model=List[CollectionInfo])
@@ -226,16 +228,7 @@ async def update_tags(filename: str, request: TagUpdateRequest):
 
     store[filename]["tags"] = tags
     _save_store(store)
-    meta = store[filename]
-    return DocumentListItem(
-        filename=filename,
-        file_type=meta["file_type"],
-        total_chunks=meta["total_chunks"],
-        uploaded_at=meta["uploaded_at"],
-        size_bytes=meta["size_bytes"],
-        collection=meta.get("collection", DEFAULT_COLLECTION),
-        tags=tags,
-    )
+    return _to_list_item(filename, store[filename])
 
 
 @router.patch("/{filename}/collection")
